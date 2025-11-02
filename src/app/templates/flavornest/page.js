@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { businessData as initialBusinessData } from './data.js'; // Import the data
+import { businessData as initialBusinessData } from './data.js'; // Import the default data
 
-// --- Reusable UI Components (No changes needed here) ---
+// --- Reusable UI Components ---
 
 const Header = ({ business, cartCount, onCartClick }) => (
     <header className="bg-brand-bg/80 backdrop-blur-sm sticky top-0 z-40 w-full border-b border-brand-primary">
@@ -78,7 +78,8 @@ const CartModal = ({ isOpen, onClose, cart, menuData, updateCart, business }) =>
     const handleOrderSubmit = (e) => {
         e.preventDefault();
         if (totalItems === 0) {
-            alert("Your cart is empty!");
+            // Note: Replaced alert with console.error for better compatibility
+            console.error("Cart is empty!");
             return;
         }
         setIsSubmitting(true);
@@ -102,7 +103,9 @@ const CartModal = ({ isOpen, onClose, cart, menuData, updateCart, business }) =>
 
         updateCart({});
         onClose();
-        alert("Redirecting to WhatsApp to finalize your order!");
+        // You might want a better success message component than alert
+        // For now, console.log is safer.
+        console.log("Redirecting to WhatsApp to finalize your order!");
     };
 
     return (
@@ -168,17 +171,37 @@ const CartModal = ({ isOpen, onClose, cart, menuData, updateCart, business }) =>
 
 export default function FlavorNestPage() {
     
-    const [businessData] = useState(initialBusinessData); // Use the imported data
+    // Use state to hold the business data, initialized with the imported default data
+    const [businessData, setBusinessData] = useState(initialBusinessData); 
     const [cart, setCart] = useState({});
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [showToast, setShowToast] = useState(false);
 
+    // This useEffect runs only on the client-side, after the page loads
     useEffect(() => {
+        // Fetch the user's business name from local storage
+        const storedStoreName = localStorage.getItem('storeName');
+        
+        // If a name is found, update the businessData state
+        if (storedStoreName) {
+            setBusinessData(prevData => ({
+                ...prevData,
+                // Update the name
+                name: storedStoreName,
+                // Also update the footer copyright to match
+                footer: {
+                    ...prevData.footer,
+                    copyright: `© ${new Date().getFullYear()} ${storedStoreName}. All Rights Reserved`
+                }
+            }));
+        }
+
+        // Load the cart from localStorage (this logic was already present)
         const savedCart = localStorage.getItem('flavorNestCart');
         if (savedCart) {
             setCart(JSON.parse(savedCart));
         }
-    }, []);
+    }, []); // The empty array [] ensures this runs only once on mount
 
     const updateCartAndLocalStorage = (newCart) => {
         const cleanedCart = Object.fromEntries(
@@ -202,8 +225,9 @@ export default function FlavorNestPage() {
 
     const cartCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
 
+    // Show a loading state until the data is ready
     if (!businessData) {
-        return <div className="flex h-screen items-center justify-center text-brand-secondary font-serif text-xl">Loading FlavorNest...</div>;
+        return <div className="flex h-screen items-center justify-center text-brand-secondary font-serif text-xl">Loading Preview...</div>;
     }
     
     return (

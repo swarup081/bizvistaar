@@ -1,37 +1,39 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 // --- Data for the templates ---
 const templates = [
   {
     title: 'Parlence',
     description: 'Focus on a single to promote upcoming releases with a coming soon approach that has a modern layout.',
-    desktopImage: 'https://cdn.dribbble.com/userupload/6114575/file/original-74a84029d8ea2b66055c8b7076623017.jpg?resize=752x&vertical=center',
-    mobileImage: 'https://cdn.dribbble.com/userupload/6114575/file/original-74a84029d8ea2b66055c8b7076623017.jpg?resize=752x&vertical=center',
+    url: '/templates/flavornest',
   },
   {
     title: 'Lanily',
     description: 'Give site visitors eye-catching design, appointment booking, and shopping in one seamless experience.',
-    desktopImage: 'https://images.unsplash.com/photo-1598420721894-34a2e52b5757?q=80&w=2670&auto=format&fit=crop',
-    mobileImage: 'https://images.unsplash.com/photo-1620912189837-796ae773a98f?q=80&w=2574&auto=format&fit=crop',
+    url: '/templates/lanily',
   },
   {
     title: 'Karl Bewick',
     description: 'A bold, minimalist portfolio template to showcase your creative work and professional journey.',
-    desktopImage: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=2574&auto-format&fit=crop',
-    mobileImage: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=2574&auto-format&fit=crop',
+    url: '/templates/karl-bewick',
   },
   {
     title: 'Factory',
     description: 'A modern, dark-themed storefront perfect for apparel brands and high-end fashion retailers.',
-    desktopImage: 'https://images.unsplash.com/photo-1523381294911-8d3cead13475?q=80&w=2670&auto=format&fit=crop',
-    mobileImage: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?q=80&w=2574&auto=format&fit=crop',
+    url: '/templates/factory',
   },
+  {
+    title: 'XYZ Store',
+    description: 'A modern, dark-themed storefront perfect for apparel brands and high-end fashion retailers.',
+    url: '/templates/xyz',
+  }
 ];
 
 // --- Reusable Template Card Component with Animation ---
-const TemplateCard = ({ title, description, desktopImage, mobileImage }) => {
+const TemplateCard = ({ title, description, url }) => {
   return (
     <motion.div
       className="group max-w-xl cursor-pointer"
@@ -39,36 +41,40 @@ const TemplateCard = ({ title, description, desktopImage, mobileImage }) => {
       initial="initial"
       animate="initial"
     >
-      {/* Container for the visual part (images). */}
+      {/* Container for the visual part (iframes). */}
       <div className="relative h-[320px]">
-        
+
         {/* Mobile View - Positioned BEHIND the desktop view */}
+        {/* FIX: Changed right-[-100px] to right-[-60px] to reduce overflow */}
         <motion.div
-          className="absolute bottom-0 right-[-100px] z-0 w-[140px] h-[260px] transform overflow-hidden rounded-2xl bg-white shadow-lg p-1.5 pt-6"
+          className="absolute bottom-0 right-[-60px] z-0 w-[140px] h-[260px] transform overflow-hidden rounded-2xl bg-white shadow-lg p-1.5 pt-6"
           style={{ transformOrigin: "bottom right" }}
           variants={{
-            initial: { 
-              x: -65, 
+            initial: {
+              // FIX: Adjusted x to compensate for new 'right' position
+              x: -25,
               zIndex: 0,
-              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" 
+              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
             },
             hover: {
-              x: [-65, 5, -70], // Initial -> Go Right -> Swing to Front
-              zIndex: [0, 0, 20],   // Stay behind, then jump to front at the end
+              // FIX: Adjusted animation keyframes to maintain the same visual motion
+              x: [-25, 45, -30],
+              zIndex: [0, 0, 20],
               boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
               transition: {
                 duration: 0.7,
                 ease: "easeInOut",
-                times: [0, 0.5, 1] // Control the timing of the keyframes
+                times: [0, 0.5, 1]
               },
             },
           }}
         >
-          <div className="w-full h-full overflow-hidden rounded-b-xl">
-            <img 
-              src={mobileImage}
-              alt={`${title} Mobile Preview`}
-             className="h-full w-full object-cover"
+          <div className="w-full h-full overflow-hidden rounded-b-xl bg-white">
+            <iframe
+              src={url}
+              className="w-[350px] h-[667px] origin-top-left scale-[0.37] transform pointer-events-none"
+              scrolling="no"
+              title={`${title} Mobile Preview`}
             />
           </div>
         </motion.div>
@@ -86,11 +92,12 @@ const TemplateCard = ({ title, description, desktopImage, mobileImage }) => {
             }
           }}
         >
-          <div className="w-full h-full overflow-hidden rounded-b-xl">
-            <img
-              src={desktopImage}
-              alt={`${title} Desktop Preview`}
-              className="h-full w-full object-cover"
+          <div className="w-full h-full overflow-hidden rounded-b-xl bg-white">
+            <iframe
+              src={url}
+              className="w-[1280px] h-[750px] origin-top-left scale-[0.39] transform pointer-events-none"
+              scrolling="no"
+              title={`${title} Desktop Preview`}
             />
           </div>
         </motion.div>
@@ -101,12 +108,16 @@ const TemplateCard = ({ title, description, desktopImage, mobileImage }) => {
         <h3 className="text-xl font-bold text-gray-900">{title}</h3>
         <p className="mt-2 text-base leading-relaxed text-gray-600">{description}</p>
         <div className="mt-6 flex items-center gap-3">
-            <button className="rounded-lg bg-gray-900 px-6 py-2.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-gray-800">
-                Start Editing
-            </button>
-            <button className="rounded-lg bg-white px-6 py-2.5 text-base font-semibold text-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 transition-colors hover:bg-gray-50">
-                Preview Site
-            </button>
+            <Link href={`${url}/edit`}>
+              <button className="rounded-lg bg-gray-900 px-6 py-2.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-gray-800">
+                  Start Editing
+              </button>
+            </Link>
+            <Link href={url} target="_blank" rel="noopener noreferrer">
+                <button className="rounded-lg bg-white px-6 py-2.5 text-base font-semibold text-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 transition-colors hover:bg-gray-50">
+                    Preview Site
+                </button>
+            </Link>
         </div>
       </div>
     </motion.div>
@@ -116,7 +127,7 @@ const TemplateCard = ({ title, description, desktopImage, mobileImage }) => {
 
 // --- Main Page ---
 export default function TemplatesPage() {
-  const [storeName, setStoreName] = useState("Your Business"); 
+  const [storeName, setStoreName] = useState("Your Business");
 
   useEffect(() => {
     const storedStoreName = localStorage.getItem('storeName');
@@ -139,8 +150,8 @@ export default function TemplatesPage() {
 
         {/* Updated Grid Container */}
         <div className="mt-24 grid grid-cols-1 justify-items-start gap-x-16 gap-y-24 lg:grid-cols-2 lg:gap-x-10 lg:gap-y-28 pl-6">
-          {templates.map((template) => (
-            <TemplateCard key={template.title} {...template} />
+          {templates.map((template, index) => (
+            <TemplateCard key={`${template.title}-${index}`} {...template} />
           ))}
         </div>
       </div>
