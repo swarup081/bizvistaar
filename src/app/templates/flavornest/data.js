@@ -37,13 +37,10 @@ export const businessData = {
     menu: {
         title: "Our Signature Offerings",
         items: [
-            { id: 1, name: "Kesar Mawa Modak (Pre Order)", description: "...", price: 129, unit: "6 Pieces", image: "/flavournestImage/modak_productimage.jpeg" },
-            { id: 2, name: "Shahi Mawa Rolls (Pre Order)", description: "...", price: 149, unit: "4 Pieces", image: "/flavournestImage/shahi_mava_rolls_productimage.jpeg" },
-            { id: 4, name: "Milk Shondesh/ Sandesh (Pre Order)", description: "...", price: 109, unit: "6 Pieces", image: "/flavournestImage/Sandesh_productimage.jpeg" },
-            { id: 5, name: "Thekua (Pre Order)", description: "...", price: 249, unit: "200 grams", image: "/flavournestImage/thakua_productimage.jpeg" },
-            { id: 6, name: "Kesar Elaichi Shondesh (Pre Order)", description: "...", price: 129, unit: "6 Pieces", image: "/flavournestImage/Kesar_Elaichi_Shondesh_product_image.jpeg" },
-            { id: 7, name: "Chocolate Coconut Burfi (Pre Order)", description: "...", price: 312, unit: "12 Pieces", image: "/flavournestImage/Chocolate_Coconut_Burfi.jpeg" }
-        ]
+            { id: 1, name: "Kesar Mawa Modak ", description: "Delicate homemade mawa modaks with kesar and premium dry fruits. Perfect for festivals, celebrations, and gifting.", price: 129, unit: "6 Pieces", image: "/flavournestImage/modak_productimage.jpeg" },
+            { id: 2, name: "Shahi Mawa Rolls ", description: "Rich rolls stuffed with fresh mawa, fried in ghee and coated in sugar syrup, garnished with grated mawa, boondi, and dry fruits. Ideal for festivals, special occasions, and gifting.", price: 149, unit: "4 Pieces", image: "/flavournestImage/shahi_mava_rolls_productimage.jpeg" },
+            { id: 5, name: "Thekua ", description: "Authentic handmade Thekua made with 100% whole wheat atta and fried in fresh oil , no palm oil, no preservatives. Crafted in small, limited batches for a perfectly crisp texture and rich traditional flavor.", price: 249, unit: "200 grams", image: "/flavournestImage/thakua_productimage.jpeg" },
+           ]
     },
     reviews: {
         title: "What Our Customers Say",
@@ -56,9 +53,9 @@ export const businessData = {
     footer: {
         // This copyright text will also be dynamically updated by the page component
         copyright: `© ${new Date().getFullYear()} Your Business Name. All Rights Reserved`,
-        madeBy: "Swarup",
+        madeBy: "BizVistar",
         madeByLink: "https://www.instagram.com/swarup_81",
         socialLink: "https://www.instagram.com/_flavornest_",
-        socialText: "Follow our journey on Instagram"
+        socialText: "Follow our journey on "
     }
 };

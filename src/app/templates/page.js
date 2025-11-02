@@ -9,31 +9,37 @@ const templates = [
     title: 'Parlence',
     description: 'Focus on a single to promote upcoming releases with a coming soon approach that has a modern layout.',
     url: '/templates/flavornest',
+    previewUrl: '/preview/flavornest', // Added leading slash for consistency
   },
   {
     title: 'Lanily',
     description: 'Give site visitors eye-catching design, appointment booking, and shopping in one seamless experience.',
     url: '/templates/lanily',
+    previewUrl: '/preview/flavornest', // Added leading slash for consistency
   },
   {
     title: 'Karl Bewick',
     description: 'A bold, minimalist portfolio template to showcase your creative work and professional journey.',
     url: '/templates/karl-bewick',
+    previewUrl: '/preview/flavornest', // Added leading slash for consistency
   },
   {
     title: 'Factory',
     description: 'A modern, dark-themed storefront perfect for apparel brands and high-end fashion retailers.',
     url: '/templates/factory',
+    previewUrl: '/preview/flavornest', // Added leading slash for consistency
   },
   {
     title: 'XYZ Store',
     description: 'A modern, dark-themed storefront perfect for apparel brands and high-end fashion retailers.',
     url: '/templates/xyz',
+    previewUrl: '/preview/flavornest', // Added leading slash for consistency
   }
 ];
 
 // --- Reusable Template Card Component with Animation ---
-const TemplateCard = ({ title, description, url }) => {
+// FIX: Added 'previewUrl' to the component's props destructuring
+const TemplateCard = ({ title, description, url, previewUrl }) => {
   return (
     <motion.div
       className="group max-w-xl cursor-pointer"
@@ -45,19 +51,16 @@ const TemplateCard = ({ title, description, url }) => {
       <div className="relative h-[320px]">
 
         {/* Mobile View - Positioned BEHIND the desktop view */}
-        {/* FIX: Changed right-[-100px] to right-[-60px] to reduce overflow */}
         <motion.div
           className="absolute bottom-0 right-[-60px] z-0 w-[140px] h-[260px] transform overflow-hidden rounded-2xl bg-white shadow-lg p-1.5 pt-6"
           style={{ transformOrigin: "bottom right" }}
           variants={{
             initial: {
-              // FIX: Adjusted x to compensate for new 'right' position
               x: -25,
               zIndex: 0,
               boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
             },
             hover: {
-              // FIX: Adjusted animation keyframes to maintain the same visual motion
               x: [-25, 45, -30],
               zIndex: [0, 0, 20],
               boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
@@ -113,7 +116,7 @@ const TemplateCard = ({ title, description, url }) => {
                   Start Editing
               </button>
             </Link>
-            <Link href={url} target="_blank" rel="noopener noreferrer">
+            <Link href={previewUrl} target="_blank" rel="noopener noreferrer">
                 <button className="rounded-lg bg-white px-6 py-2.5 text-base font-semibold text-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 transition-colors hover:bg-gray-50">
                     Preview Site
                 </button>

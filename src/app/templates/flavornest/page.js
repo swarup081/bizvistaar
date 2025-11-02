@@ -78,7 +78,6 @@ const CartModal = ({ isOpen, onClose, cart, menuData, updateCart, business }) =>
     const handleOrderSubmit = (e) => {
         e.preventDefault();
         if (totalItems === 0) {
-            // Note: Replaced alert with console.error for better compatibility
             console.error("Cart is empty!");
             return;
         }
@@ -103,17 +102,15 @@ const CartModal = ({ isOpen, onClose, cart, menuData, updateCart, business }) =>
 
         updateCart({});
         onClose();
-        // You might want a better success message component than alert
-        // For now, console.log is safer.
         console.log("Redirecting to WhatsApp to finalize your order!");
     };
 
     return (
-        <div className={`modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 invisible'}`} onClick={onClose}>
+        <div className={`modal fixed inset-0 bg-gray-900/50  flex items-center justify-center p-4 z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 invisible'}`} onClick={onClose}>
             <div className={`modal-content bg-white w-full max-w-lg rounded-lg shadow-2xl p-6 md:p-8 transform transition-transform duration-300 ${isOpen ? 'scale-100' : 'scale-95'}`} onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center border-b pb-4 mb-4">
-                    <h3 className="text-2xl font-bold text-brand-secondary font-serif">Your Order</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-3xl leading-none">&times;</button>
+                    <h3 className="text-2xl font-bold text-brand-secondary">Your Order</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-3xl">&times;</button>
                 </div>
 
                 <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
@@ -150,11 +147,20 @@ const CartModal = ({ isOpen, onClose, cart, menuData, updateCart, business }) =>
                             <span>₹{totalPrice}</span>
                         </div>
                         
-                        <h4 className="text-xl font-bold text-brand-secondary font-serif mt-6 mb-3">Delivery Details</h4>
+                        <h4 className="text-xl font-bold text-brand-secondary mt-6 mb-3">Delivery Details</h4>
                         <form onSubmit={handleOrderSubmit} className="space-y-4">
-                            <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Full Name" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-brand-secondary focus:border-brand-secondary" />
-                            <input type="tel" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="WhatsApp Number" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-brand-secondary focus:border-brand-secondary" />
-                            <textarea value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} rows="3" placeholder="Full Address or 'Pickup'" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-brand-secondary focus:border-brand-secondary"></textarea>
+                            <div>
+                                <label htmlFor="customer-name" className="block text-sm font-medium text-brand-text">Full Name</label>
+                                <input type="text" id="customer-name" value={customerName} onChange={e => setCustomerName(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-brand-secondary focus:border-brand-secondary" />
+                            </div>
+                            <div>
+                                <label htmlFor="customer-phone" className="block text-sm font-medium text-brand-text">WhatsApp Number</label>
+                                <input type="tel" id="customer-phone" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-brand-secondary focus:border-brand-secondary" />
+                            </div>
+                             <div>
+                                <label htmlFor="customer-address" className="block text-sm font-medium text-brand-text">Full Address (or Pickup)</label>
+                                <textarea id="customer-address" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} rows="3" required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-brand-secondary focus:border-brand-secondary" placeholder="Please provide your full address for delivery, or write 'Pickup'"></textarea>
+                            </div>
                             <button type="submit" disabled={isSubmitting} className="w-full btn btn-primary py-3 rounded-lg text-lg flex items-center justify-center space-x-2 disabled:bg-gray-400">
                                 <span>{isSubmitting ? 'Processing...' : 'Place Order via WhatsApp'}</span>
                             </button>
