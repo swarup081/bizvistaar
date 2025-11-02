@@ -1,157 +1,102 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 
-// --- Data for the templates ---
-const templates = [
-  {
-    title: 'Parlence',
-    description: 'Focus on a single to promote upcoming releases with a coming soon approach that has a modern layout.',
-    desktopImage: 'https://cdn.dribbble.com/userupload/6114575/file/original-74a84029d8ea2b66055c8b7076623017.jpg?resize=752x&vertical=center',
-    mobileImage: 'https://cdn.dribbble.com/userupload/6114575/file/original-74a84029d8ea2b66055c8b7076623017.jpg?resize=752x&vertical=center',
-  },
-  {
-    title: 'Lanily',
-    description: 'Give site visitors eye-catching design, appointment booking, and shopping in one seamless experience.',
-    desktopImage: 'https://images.unsplash.com/photo-1598420721894-34a2e52b5757?q=80&w=2670&auto=format&fit=crop',
-    mobileImage: 'https://images.unsplash.com/photo-1620912189837-796ae773a98f?q=80&w=2574&auto=format&fit=crop',
-  },
-  {
-    title: 'Karl Bewick',
-    description: 'A bold, minimalist portfolio template to showcase your creative work and professional journey.',
-    desktopImage: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=2574&auto-format&fit=crop',
-    mobileImage: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=2574&auto-format&fit=crop',
-  },
-  {
-    title: 'Factory',
-    description: 'A modern, dark-themed storefront perfect for apparel brands and high-end fashion retailers.',
-    desktopImage: 'https://images.unsplash.com/photo-1523381294911-8d3cead13475?q=80&w=2670&auto=format&fit=crop',
-    mobileImage: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?q=80&w=2574&auto=format&fit=crop',
-  },
-];
+import { useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 
-// --- Reusable Template Card Component with Animation ---
-const TemplateCard = ({ title, description, desktopImage, mobileImage }) => {
-  return (
-    <motion.div
-      className="group max-w-xl cursor-pointer"
-      whileHover="hover"
-      initial="initial"
-      animate="initial"
-    >
-      {/* Container for the visual part (images). */}
-      <div className="relative h-[320px]">
-        
-        {/* Mobile View - Positioned BEHIND the desktop view */}
-        <motion.div
-          className="absolute bottom-0 right-[-100px] z-0 w-[140px] h-[260px] transform overflow-hidden rounded-2xl bg-white shadow-lg p-1.5 pt-6"
-          style={{ transformOrigin: "bottom right" }}
-          variants={{
-            initial: { 
-              x: -65, 
-              zIndex: 0,
-              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" 
-            },
-            hover: {
-              x: [-65, 5, -70], // Initial -> Go Right -> Swing to Front
-              zIndex: [0, 0, 20],   // Stay behind, then jump to front at the end
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-              transition: {
-                duration: 0.7,
-                ease: "easeInOut",
-                times: [0, 0.5, 1] // Control the timing of the keyframes
-              },
-            },
-          }}
-        >
-          <div className="w-full h-full overflow-hidden rounded-b-xl">
-            <img 
-              src={mobileImage}
-              alt={`${title} Mobile Preview`}
-             className="h-full w-full object-cover"
-            />
-          </div>
-        </motion.div>
+// --- Reusable SVG Icons ---
+const BackIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+  </svg>
+);
 
-        {/* Desktop View - Positioned IN FRONT of the mobile view */}
-        <motion.div
-          className="absolute left-0 top-0 z-10 h-[320px] w-[500px] overflow-hidden rounded-2xl border border-gray-200/60 bg-white shadow-xl p-1 pt-7"
-          style={{ transformOrigin: "bottom left" }}
-          variants={{
-            initial: {
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.30)"
-            },
-            hover: {
-              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
-            }
-          }}
-        >
-          <div className="w-full h-full overflow-hidden rounded-b-xl">
-            <img
-              src={desktopImage}
-              alt={`${title} Desktop Preview`}
-              className="h-full w-full object-cover"
-            />
-          </div>
-        </motion.div>
-      </div>
+const DesktopIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-1.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z" />
+  </svg>
+);
 
-      {/* --- Hover Info Block --- */}
-      <div className="mt-8 min-h-[140px] transform px-2 opacity-0 transition-opacity duration-300 ease-in-out group-hover:opacity-100">
-        <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-        <p className="mt-2 text-base leading-relaxed text-gray-600">{description}</p>
-        <div className="mt-6 flex items-center gap-3">
-            <button className="rounded-lg bg-gray-900 px-6 py-2.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-gray-800">
-                Start Editing
-            </button>
-            <button className="rounded-lg bg-white px-6 py-2.5 text-base font-semibold text-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 transition-colors hover:bg-gray-50">
-                Preview Site
-            </button>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
+const MobileIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75A2.25 2.25 0 0015.75 1.5h-2.25m-3.75 0h3.75M12 18.75h.008v.008H12v-.008z" />
+  </svg>
+);
 
+// --- Main Preview Page Component ---
+export default function TemplatePreviewPage() {
+  const router = useRouter();
+  const params = useParams();
+  const { templateName } = params; // This will be 'flavornest', 'lanily', etc.
 
-// --- Main Page ---
-export default function TemplatesPage() {
-  const [storeName, setStoreName] = useState("Your Business"); 
+  const [view, setView] = useState('desktop'); // 'desktop' or 'mobile'
 
-  useEffect(() => {
-    const storedStoreName = localStorage.getItem('storeName');
-    if (storedStoreName) {
-      setStoreName(storedStoreName);
-    }
-  }, []);
+  // Construct the URL for the iframe source.
+  // This now correctly points to your existing template page, e.g., /templates/flavornest
+  const templateUrl = `/templates/${templateName}`;
 
   return (
-    <div className="bg-white font-sans">
-      <div className="mx-auto max-w-screen-2xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-        <div className="text-center">
-            <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-              Choose a Template for {storeName}
-            </h2>
-            <p className="mx-auto mt-5 max-w-2xl text-xl text-gray-600">
-                Each template is professionally designed to be the perfect starting point for your new website.
-            </p>
-        </div>
+    <div className="flex flex-col h-screen bg-gray-100 font-sans">
+      
+      {/* --- Top Navigation Bar --- */}
+      <header className="flex-shrink-0 bg-white border-b border-gray-200 shadow-sm z-10">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            
+            {/* Back Button (goes back to /templates) */}
+            <Link href="/templates">
+              <button 
+                className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
+              >
+                <BackIcon />
+                Back to Templates
+              </button>
+            </Link>
 
-        {/* Updated Grid Container */}
-        <div className="mt-24 grid grid-cols-1 justify-items-start gap-x-16 gap-y-24 lg:grid-cols-2 lg:gap-x-10 lg:gap-y-28 pl-6">
-          {templates.map((template) => (
-            <TemplateCard key={template.title} {...template} />
-          ))}
-        </div>
-      </div>
+            {/* Device Toggles */}
+            <div className="flex items-center gap-2 p-1 rounded-lg bg-gray-100 border border-gray-200">
+              <button
+                onClick={() => setView('desktop')}
+                className={`p-1.5 rounded-md transition-colors ${view === 'desktop' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                aria-label="Desktop view"
+              >
+                <DesktopIcon />
+              </button>
+              <button
+                onClick={() => setView('mobile')}
+                className={`p-1.5 rounded-md transition-colors ${view === 'mobile' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                aria-label="Mobile view"
+              >
+                <MobileIcon />
+              </button>
+            </div>
+            
+            {/* Action Button */}
+            <div className="flex items-center gap-4">
+                 <p className="text-sm text-gray-500 hidden sm:block">No credit card required*</p>
+                 <Link href={`/get-started`}>
+                    <button className="px-5 py-2.5 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors">
+                        Start Editing
+                    </button>
+                 </Link>
+            </div>
 
-       {/* Floating Contact Us Button */}
-       <button className="fixed bottom-8 right-8 z-50 flex items-center gap-2 rounded-full bg-white px-5 py-3 font-semibold text-gray-800 shadow-lg ring-1 ring-inset ring-gray-200 transition-transform hover:scale-105">
-           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
-            </svg>
-            Contact Us
-       </button>
+          </div>
+        </div>
+      </header>
+      
+      {/* --- Iframe Content Area --- */}
+      <main className="flex-grow flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+          <div 
+              className={`transition-all duration-300 ease-in-out ${view === 'desktop' ? 'w-full h-full' : 'w-[375px] h-[750px] flex-shrink-0'}`}
+           >
+              <iframe
+                  src={templateUrl}
+                  title={`${templateName} Preview`}
+                  className="w-full h-full bg-white border border-gray-300 rounded-lg shadow-2xl"
+              />
+          </div>
+      </main>
     </div>
   );
 }
