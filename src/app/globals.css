@@ -1,107 +1,91 @@
-
 @import "tailwindcss";
 
-/*
- * 1. Define your custom theme variables (colors and fonts)
- * Tailwind v4 will automatically create utility classes from these
- * e.g., --color-brand-primary creates bg-brand-primary, text-brand-primary, etc.
- */
-@theme {
-  --color-brand-bg: #FFF8F2; /* Creamy off-white */
-  --color-brand-text: #5D4037; /* Warm brown text */
-  --color-brand-primary: #F9EBE4; /* Soft Peach/Pink */
-  --color-brand-secondary: #6D4C41; /* Darker warm brown */
-
-  --font-sans: 'Inter', sans-serif;
-  --font-serif: 'Playfair Display', serif;
+:root {
+  --font-heading: var(--font-playfair-display);
+  --font-body: var(--font-inter);
 }
 
-/*
- * 2. Apply base styles to elements like `body` and `h1`
- * These are fundamental styles for your entire application.
- */
+/* --- 6 NEW, CURATED COLOR PALETTES --- */
+
+/* 1. Warm Bakery (The original theme) */
+.theme-warm-bakery {
+  --color-brand-bg: #FFF8F2;
+  --color-brand-text: #5D4037;
+  --color-brand-primary: #F9EBE4;
+  --color-brand-secondary: #8D6E63;
+}
+
+/* 2. Strawberry Cream (Soft, sweet, "baby pink" theme) */
+.theme-strawberry-cream {
+  --color-brand-bg: #FFF7F9;
+  --color-brand-text: #502D39;
+  --color-brand-primary: #FDE8EF;
+  --color-brand-secondary: #D81B60;
+}
+
+/* 3. Chocolate & Caramel (Rich and decadent) */
+.theme-chocolate-caramel {
+  --color-brand-bg: #FBF6F0;
+  --color-brand-text: #4E342E;
+  --color-brand-primary: #EFEBE9;
+  --color-brand-secondary: #6D4C41;
+}
+
+/* 4. Cinnamon Spice (Warm, with reddish-brown tones) */
+.theme-cinnamon-spice {
+  --color-brand-bg: #FEF6F4;
+  --color-brand-text: #6c2b18;
+  --color-brand-primary: #FAEAE5;
+  --color-brand-secondary: #A14D2A;
+}
+
+/* 5. Earl Grey (Sophisticated and muted with cool tones) */
+.theme-earl-grey {
+  --color-brand-bg: #F8F9FA;
+  --color-brand-text: #495057;
+  --color-brand-primary: #E9ECEF;
+  --color-brand-secondary: #8A7F7D;
+}
+
+/* 6. Dark Roast & Gold (Luxurious dark theme) */
+.theme-dark-roast {
+  --color-brand-bg: #211A16;
+  --color-brand-text: #F3EFE9;
+  --color-brand-primary: #3D2F28;
+  --color-brand-secondary: #E4A757;
+}
+
+
+@theme {
+  --color-brand-bg: var(--color-brand-bg);
+  --color-brand-text: var(--color-brand-text);
+  --color-brand-primary: var(--color-brand-primary);
+  --color-brand-secondary: var(--color-brand-secondary);
+  --font-sans: var(--font-body), sans-serif;
+  --font-serif: var(--font-heading), serif;
+}
+
 @layer base {
   body {
     background-color: theme(colors.brand-bg);
     color: theme(colors.brand-text);
     font-family: theme(fontFamily.sans);
   }
-
   h1, h2, h3, h4, h5, h6 {
     font-family: theme(fontFamily.serif);
   }
 }
 
-/*
- * 3. Define reusable component classes like buttons
- * This keeps your styling consistent.
- */
 @layer components {
-  .btn {
-    @apply transition-all duration-300 ease-in-out;
-  }
   .btn-primary {
-    @apply bg-brand-secondary text-white font-medium;
+    @apply bg-brand-secondary font-medium;
+    color: var(--color-brand-bg); /* Smart text color */
   }
-  .btn-primary:hover {
-    @apply bg-brand-text -translate-y-0.5 shadow-lg;
-  }
-  .active-nav {
-    @apply text-brand-secondary font-semibold;
+  .theme-dark-roast .btn-primary {
+      color: #211A16; /* Darker text for light buttons */
   }
   .inactive-nav {
-    color: #A1887F; /* You can also make this a theme color if you want */
+    color: var(--color-brand-text);
+    @apply opacity-70;
   }
-  .modal {
-    @apply transition-opacity duration-300 ease-in-out;
-  }
-  .modal-content {
-    @apply transition-transform duration-300 ease-in-out;
-  }
-}
-
-/*
- * 4. Add custom responsive utilities
- * This uses Tailwind's screen sizes for consistency.
- */
-@layer utilities {
-  @media (max-width: 768px) {
-    #reviews .grid {
-      @apply flex overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none; /* Firefox */
-    }
-    #reviews .grid::-webkit-scrollbar {
-      display: none; /* Hide scrollbar for Chrome, Safari */
-    }
-    #reviews .grid > div {
-      @apply flex-shrink-0 w-11/12 snap-start;
-    }
-
-    #cart-modal .modal-content {
-      @apply p-4;
-    }
-
-    #cart-items-container .flex.justify-between {
-      @apply flex-wrap gap-y-2;
-    }
-
-    #cart-items-container .flex.justify-between > div:last-child {
-      @apply w-full justify-end;
-    }
-  }
-}
-
-/* Custom scrollbar for autocomplete */
-.autocomplete-scrollbar {
-  /* For Firefox */
-  scrollbar-width: none;
-  /* For Internet Explorer and Edge */
-  -ms-overflow-style: none;
-}
-
-/* Hide scrollbar for WebKit browsers (Chrome, Safari) */
-.autocomplete-scrollbar::-webkit-scrollbar {
-  width: 0px;
-  background: transparent; /* make scrollbar transparent */
 }

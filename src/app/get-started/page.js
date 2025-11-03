@@ -188,7 +188,7 @@ export default function StepOne() {
             {/* Left Side */}
             <div className="w-1/2 flex flex-col justify-between p-16 bg-white">
                 <div>
-                    <div className="text-2xl font-bold text-gray-800 mb-12">UdyogSahay</div>
+                    <div className="text-2xl font-bold text-gray-800 mb-12">BizVistar</div>
                     <h2 className="text-4xl font-semibold text-gray-800 mb-10">
                         What type of business do you have?
                     </h2>

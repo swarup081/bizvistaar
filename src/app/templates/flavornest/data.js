@@ -4,19 +4,24 @@
 export const businessData = {
     // --- GENERAL BUSINESS INFO ---
     name: "Your Business Name", // This will be replaced by the name from local storage
-    logo: "https://flavornestfoods.netlify.app/flavornest_logo.jpeg",
+    logo: "/flavournestImage/flavornest_logo.jpeg",
     whatsappNumber: "91123456789", // Remember to change this for each client
 
-    // --- NEW THEME SECTION ---
-    theme: {
-        '--color-primary': '#6D4C41',
-        '--color-secondary': '#F9EBE4',
-        '--color-text': '#5D4037',
-        '--color-background': '#FFF8F2',
-        '--font-heading': 'var(--font-playfair)',
-        '--font-body': 'var(--font-inter)',
-    },
+    // --- CORRECTED THEME SECTION ---
+   // ...
+// In src/app/templates/flavornest/data.js
 
+theme: {
+    // Choose any: 'warm-bakery', 'strawberry-cream', 'chocolate-caramel',
+    // 'cinnamon-spice', 'earl-grey', 'dark-roast'
+    colorPalette: 'chocolate-caramel',
+
+    font: {
+        heading: 'Poppins',
+        body: 'Lato'
+    }
+},
+// ...
     // --- NAVIGATION ---
     navigation: [
         { href: "#home", label: "Home" },
@@ -37,10 +42,13 @@ export const businessData = {
     menu: {
         title: "Our Signature Offerings",
         items: [
-            { id: 1, name: "Kesar Mawa Modak ", description: "Delicate homemade mawa modaks with kesar and premium dry fruits. Perfect for festivals, celebrations, and gifting.", price: 129, unit: "6 Pieces", image: "/flavournestImage/modak_productimage.jpeg" },
-            { id: 2, name: "Shahi Mawa Rolls ", description: "Rich rolls stuffed with fresh mawa, fried in ghee and coated in sugar syrup, garnished with grated mawa, boondi, and dry fruits. Ideal for festivals, special occasions, and gifting.", price: 149, unit: "4 Pieces", image: "/flavournestImage/shahi_mava_rolls_productimage.jpeg" },
-            { id: 5, name: "Thekua ", description: "Authentic handmade Thekua made with 100% whole wheat atta and fried in fresh oil , no palm oil, no preservatives. Crafted in small, limited batches for a perfectly crisp texture and rich traditional flavor.", price: 249, unit: "200 grams", image: "/flavournestImage/thakua_productimage.jpeg" },
-           ]
+            { id: 1, name: "Kesar Mawa Modak (Pre Order)", description: "...", price: 129, unit: "6 Pieces", image: "/flavournestImage/modak_productimage.jpeg" },
+            { id: 2, name: "Shahi Mawa Rolls (Pre Order)", description: "...", price: 149, unit: "4 Pieces", image: "/flavournestImage/shahi_mava_rolls_productimage.jpeg" },
+            { id: 4, name: "Milk Shondesh/ Sandesh (Pre Order)", description: "...", price: 109, unit: "6 Pieces", image: "/flavournestImage/Sandesh_productimage.jpeg" },
+            { id: 5, name: "Thekua (Pre Order)", description: "...", price: 249, unit: "200 grams", image: "/flavournestImage/thakua_productimage.jpeg" },
+            { id: 6, name: "Kesar Elaichi Shondesh (Pre Order)", description: "...", price: 129, unit: "6 Pieces", image: "/flavournestImage/Kesar_Elaichi_Shondesh_product_image.jpeg" },
+            { id: 7, name: "Chocolate Coconut Burfi (Pre Order)", description: "...", price: 312, unit: "12 Pieces", image: "/flavournestImage/Chocolate_Coconut_Burfi.jpeg" }
+        ]
     },
     reviews: {
         title: "What Our Customers Say",
@@ -53,9 +61,9 @@ export const businessData = {
     footer: {
         // This copyright text will also be dynamically updated by the page component
         copyright: `© ${new Date().getFullYear()} Your Business Name. All Rights Reserved`,
-        madeBy: "BizVistar",
+        madeBy: "Swarup",
         madeByLink: "https://www.instagram.com/swarup_81",
         socialLink: "https://www.instagram.com/_flavornest_",
-        socialText: "Follow our journey on "
+        socialText: "Follow our journey on Instagram"
     }
 };

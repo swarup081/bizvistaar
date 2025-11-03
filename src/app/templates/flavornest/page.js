@@ -106,11 +106,11 @@ const CartModal = ({ isOpen, onClose, cart, menuData, updateCart, business }) =>
     };
 
     return (
-        <div className={`modal fixed inset-0 bg-gray-900/50  flex items-center justify-center p-4 z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 invisible'}`} onClick={onClose}>
+        <div className={`modal fixed inset-0 bg-gray-900/50 flex items-center justify-center p-4 z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 invisible'}`} onClick={onClose}>
             <div className={`modal-content bg-white w-full max-w-lg rounded-lg shadow-2xl p-6 md:p-8 transform transition-transform duration-300 ${isOpen ? 'scale-100' : 'scale-95'}`} onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center border-b pb-4 mb-4">
-                    <h3 className="text-2xl font-bold text-brand-secondary">Your Order</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-3xl">&times;</button>
+                    <h3 className="text-2xl font-bold text-brand-secondary font-serif">Your Order</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-3xl leading-none">&times;</button>
                 </div>
 
                 <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
@@ -147,7 +147,7 @@ const CartModal = ({ isOpen, onClose, cart, menuData, updateCart, business }) =>
                             <span>₹{totalPrice}</span>
                         </div>
                         
-                        <h4 className="text-xl font-bold text-brand-secondary mt-6 mb-3">Delivery Details</h4>
+                        <h4 className="text-xl font-bold text-brand-secondary font-serif mt-6 mb-3">Delivery Details</h4>
                         <form onSubmit={handleOrderSubmit} className="space-y-4">
                             <div>
                                 <label htmlFor="customer-name" className="block text-sm font-medium text-brand-text">Full Name</label>
@@ -177,37 +177,28 @@ const CartModal = ({ isOpen, onClose, cart, menuData, updateCart, business }) =>
 
 export default function FlavorNestPage() {
     
-    // Use state to hold the business data, initialized with the imported default data
     const [businessData, setBusinessData] = useState(initialBusinessData); 
     const [cart, setCart] = useState({});
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [showToast, setShowToast] = useState(false);
 
-    // This useEffect runs only on the client-side, after the page loads
     useEffect(() => {
-        // Fetch the user's business name from local storage
         const storedStoreName = localStorage.getItem('storeName');
-        
-        // If a name is found, update the businessData state
         if (storedStoreName) {
             setBusinessData(prevData => ({
                 ...prevData,
-                // Update the name
                 name: storedStoreName,
-                // Also update the footer copyright to match
                 footer: {
                     ...prevData.footer,
                     copyright: `© ${new Date().getFullYear()} ${storedStoreName}. All Rights Reserved`
                 }
             }));
         }
-
-        // Load the cart from localStorage (this logic was already present)
         const savedCart = localStorage.getItem('flavorNestCart');
         if (savedCart) {
             setCart(JSON.parse(savedCart));
         }
-    }, []); // The empty array [] ensures this runs only once on mount
+    }, []); 
 
     const updateCartAndLocalStorage = (newCart) => {
         const cleanedCart = Object.fromEntries(
@@ -231,14 +222,28 @@ export default function FlavorNestPage() {
 
     const cartCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
 
-    // Show a loading state until the data is ready
+    // --- !! NEW DYNAMIC THEME LOGIC !! ---
+    const createFontVariable = (fontName) => {
+        const formattedName = fontName.toLowerCase().replace(' ', '-');
+        return `var(--font-${formattedName})`;
+    };
+    
+    const fontVariables = {
+        '--font-heading': createFontVariable(businessData.theme.font.heading),
+        '--font-body': createFontVariable(businessData.theme.font.body),
+    };
+
+    const themeClassName = `theme-${businessData.theme.colorPalette}`;
+
     if (!businessData) {
         return <div className="flex h-screen items-center justify-center text-brand-secondary font-serif text-xl">Loading Preview...</div>;
     }
     
     return (
-        <div className="antialiased font-sans bg-brand-bg text-brand-text">
-            
+        <div 
+          className={`antialiased font-sans bg-brand-bg text-brand-text ${themeClassName}`}
+          style={fontVariables}
+        >
             <Header 
                 business={{ name: businessData.name, logo: businessData.logo, navigation: businessData.navigation }} 
                 cartCount={cartCount}
