@@ -6,8 +6,6 @@
 }
 
 /* --- 6 NEW, CURATED COLOR PALETTES --- */
-
-/* 1. Warm Bakery (The original theme) */
 .theme-warm-bakery {
   --color-brand-bg: #FFF8F2;
   --color-brand-text: #5D4037;
@@ -56,6 +54,21 @@
 }
 
 
+/* 7. Candlea Beige (From Screenshot) */
+.theme-candlea-beige {
+  --color-brand-bg: #FDFCFB;     /* Main background (light cream) */
+  --color-brand-text: #261100;    /* Main text (dark brown/black) */
+  --color-brand-primary: #FBEAE4;  /* Peach accent background */
+  --color-brand-secondary: #000000; /* Buttons and accents (black) */
+}
+
+/* 8. NEW: Subtle Greenish (POINT 1) */
+.theme-sage-green {
+  --color-brand-bg: #F7F9F5;     /* Soft sage background */
+  --color-brand-text: #344E41;    /* Deep forest green */
+  --color-brand-primary: #EBF2E8;  /* Lighter sage */
+  --color-brand-secondary: #588157; /* Rich, earthy green */
+}
 @theme {
   --color-brand-bg: var(--color-brand-bg);
   --color-brand-text: var(--color-brand-text);
@@ -77,15 +90,31 @@
 }
 
 @layer components {
-  .btn-primary {
-    @apply bg-brand-secondary font-medium;
-    color: var(--color-brand-bg); /* Smart text color */
+  /* ... (your existing btn-primary, inactive-nav, etc.) ... */
+}
+
+/* --- MARQUEE ANIMATION (FOR POINT 3) --- */
+@layer utilities {
+  .marquee {
+    animation: marquee 20s linear infinite;
   }
-  .theme-dark-roast .btn-primary {
-      color: #211A16; /* Darker text for light buttons */
+  @keyframes marquee {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-100%); }
   }
-  .inactive-nav {
-    color: var(--color-brand-text);
-    @apply opacity-70;
-  }
+}
+/* ... (rest of your globals.css file) ... */
+
+/* Custom scrollbar for autocomplete */
+.autocomplete-scrollbar {
+  /* For Firefox */
+  scrollbar-width: none;
+  /* For Internet Explorer and Edge */
+  -ms-overflow-style: none;
+}
+
+/* Hide scrollbar for WebKit browsers (Chrome, Safari) */
+.autocomplete-scrollbar::-webkit-scrollbar {
+  width: 0px;
+  background: transparent; /* make scrollbar transparent */
 }
