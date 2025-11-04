@@ -20,8 +20,8 @@ const templates = [
   {
     title: 'Karl Bewick',
     description: 'A bold, minimalist portfolio template to showcase your creative work and professional journey.',
-    url: '/templates/karl-bewick',
-    previewUrl: '/preview/flavornest', // Added leading slash for consistency
+    url: '/templates/avenix',
+    previewUrl: '/preview/avenix', // Added leading slash for consistency
   },
   {
     title: 'Factory',

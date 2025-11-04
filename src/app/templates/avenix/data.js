@@ -7,7 +7,7 @@ export const businessData = {
     
     // --- THEME SECTION ---
     theme: {
-        colorPalette: 'avenix-minimal', 
+        colorPalette: 'elegant-botanics', 
         font: {
             heading: 'Cormorant Garamond', 
             body: 'DM Sans'              
