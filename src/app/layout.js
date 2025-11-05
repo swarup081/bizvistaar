@@ -7,11 +7,20 @@ import {
   Poppins,
   Lora,
   Cormorant_Garamond, // Added new font
-  DM_Sans             // Added new font
+  DM_Sans,             // Added new font
+  Kalam
 } from "next/font/google";
 import "./globals.css";
 
 // --- FONT DEFINITIONS ---
+// --- 2. ADD THIS NEW FONT DEFINITION ---
+const kalam = Kalam({
+  variable: "--font-kalam",
+  subsets: ["latin"],
+  weight: ['400', '700'],
+  display: 'swap'
+});
+
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: 'swap' });
 const roboto = Roboto({ variable: "--font-roboto", subsets: ["latin"], weight: ['400', '700'], display: 'swap' });
 const lato = Lato({ variable: "--font-lato", subsets: ["latin"], weight: ['400', '700'], display: 'swap' });

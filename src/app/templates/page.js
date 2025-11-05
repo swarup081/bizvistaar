@@ -26,8 +26,8 @@ const templates = [
   {
     title: 'Factory',
     description: 'A modern, dark-themed storefront perfect for apparel brands and high-end fashion retailers.',
-    url: '/templates/factory',
-    previewUrl: '/preview/flavornest', // Added leading slash for consistency
+    url: '/templates/blissly',
+    previewUrl: '/preview/blissly', // Added leading slash for consistency
   },
   {
     title: 'XYZ Store',

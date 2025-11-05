@@ -14,10 +14,10 @@ export const businessData = {
 theme: {
     // Choose any: 'warm-bakery', 'strawberry-cream', 'chocolate-caramel',
     // 'cinnamon-spice', 'earl-grey', 'dark-roast'
-    colorPalette: 'earl-grey',
+    colorPalette: 'warm-bakery',
 
     font: {
-        heading: 'Poppins',
+        heading: 'Lora',
         body: 'Lato'
     }
 },

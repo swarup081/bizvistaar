@@ -3,6 +3,7 @@
 :root {
   --font-heading: var(--font-playfair-display);
   --font-body: var(--font-inter);
+  --font-handwriting: var(--font-kalam); /* <-- 1. ADD THIS LINE */
 }
 
 /* --- 6 NEW, CURATED COLOR PALETTES --- */
@@ -121,7 +122,26 @@
   color: var(--color-brand-bg); /* Light text on dark button */
 }
 
+/* ... (keep all existing theme classes) ... */
 
+/* 14. NEW: Brewhaven Cream */
+.theme-brewhaven-cream {
+  --color-brand-bg: #FBF9F3;       /* Creamy background from PDF */
+  --color-brand-text: #4B3832;      /* Dark brown text from PDF */
+  --color-brand-primary: #F5EFE6;    /* Lighter brown/beige cards from PDF */
+  --color-brand-secondary: #8A6E63;  /* Darker accent brown from PDF */
+  --color-brand-accent: #F5A623;     /* <-- 2. FIX THIS LINE (Was #8A6E63) */
+}
+
+/* Override default italic headings for this theme */
+.theme-brewhaven-cream h1,
+.theme-brewhaven-cream h2,
+.theme-brewhaven-cream h3,
+.theme-brewhaven-cream h4,
+.theme-brewhaven-cream h5,
+.theme-brewhaven-cream h6 {
+  font-style: normal;
+}
 /* --- 13. ADD THIS NEW PALETTE --- 
   A beautiful palette with a new accent color.
 */
