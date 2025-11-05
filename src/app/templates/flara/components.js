@@ -88,10 +88,10 @@ export const ProductCard = ({ item, templateName }) => {
     const category = businessData.categories.find(c => c.id === item.category);
 
     return (
-        <div className="group text-center h-full flex flex-col justify-between border border-transparent hover:border-brand-primary/50 transition-all p-2 rounded-lg">
+        <div className="group text-center h-full flex flex-col justify-between border border-transparent hover:border-brand-primary/50 transition-all p-2 ">
             {/* Top section: Image, Title, Price */}
             <div>
-                <a href={`/templates/${templateName}/product/${item.id}`} className="block bg-brand-primary overflow-hidden relative aspect-[4/5] h-80 rounded-lg">
+                <a href={`/templates/${templateName}/product/${item.id}`} className="block bg-brand-primary overflow-hidden relative aspect-[4/5] h-80 ">
                     <img 
                         src={item.image} 
                         alt={item.name} 
@@ -116,13 +116,13 @@ export const ProductCard = ({ item, templateName }) => {
             <div className="mt-4 px-1 space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pb-2">
                  <a 
                     href={`/templates/${templateName}/product/${item.id}`}
-                    className="w-full text-center block bg-brand-primary text-brand-text px-4 py-2.5 font-semibold text-sm hover:bg-brand-primary/80 transition-colors rounded-md"
+                    className="w-full text-center block bg-brand-primary text-brand-text px-4 py-2.5 font-semibold text-sm hover:bg-brand-primary/80 transition-colors "
                 >
                     View Details
                 </a>
                 <button 
                     onClick={handleAddToCart}
-                    className="w-full text-center block bg-brand-secondary text-brand-bg px-4 py-2.5 font-semibold text-sm hover:opacity-80 transition-opacity rounded-md"
+                    className="w-full text-center block bg-brand-secondary text-brand-bg px-4 py-2.5 font-semibold text-sm hover:opacity-80 transition-opacity "
                 >
                     Add to Cart
                 </button>
