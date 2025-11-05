@@ -6,7 +6,9 @@ import { CartProvider, useCart } from './cartContext.js'; // Import the provider
 
 // Inner component to access cart context
 function CartLayout({ children }) {
+    // 1. STATE IS INITIALIZED with the default data from data.js
     const [businessData, setBusinessData] = useState(initialBusinessData); 
+    
     const { 
         cartCount, 
         isCartOpen, 
@@ -19,26 +21,36 @@ function CartLayout({ children }) {
         showToast
     } = useCart(); // Use the cart hook
 
+    // 2. This effect runs ONCE in the browser after the component loads
     useEffect(() => {
+        // --- Font setup ---
         document.body.style.fontFamily = `'${businessData.theme.font.body}', sans-serif`;
         const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
         headings.forEach(heading => {
             heading.style.fontFamily = `'${businessData.theme.font.heading}', sans-serif`;
         });
 
+        // --- DYNAMIC NAME LOGIC ---
+        // 3. Check the user's browser for a saved name
         const storedStoreName = localStorage.getItem('storeName');
+        
+        // 4. If a saved name is found...
         if (storedStoreName) {
+            // ...update the state, overwriting the default from data.js
             setBusinessData(prevData => ({
                 ...prevData,
                 name: storedStoreName,
-                logoText: storedStoreName,
+                logoText: storedStoreName, // <-- This updates the logo text
                 footer: {
                     ...prevData.footer,
                     copyright: `© ${new Date().getFullYear()} ${storedStoreName}. All Rights Reserved`
                 }
             }));
         }
-        
+        // 5. If no name is in localStorage, this 'if' block is skipped,
+        //    and the default name from initialBusinessData (data.js) is kept.
+        // --- END OF DYNAMIC NAME LOGIC ---
+
         return () => {
             headings.forEach(heading => heading.style.fontFamily = '');
             document.body.style.fontFamily = '';
@@ -66,7 +78,7 @@ function CartLayout({ children }) {
             <Header 
                 business={{ logoText: businessData.logoText, navigation: businessData.navigation }} 
                 cartCount={cartCount}
-                onCartClick={openCart} // Use context function
+                onCartClick={openCart} 
             />
 
             <main>

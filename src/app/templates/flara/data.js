@@ -31,7 +31,7 @@ const categories = [
   
       // --- THEME SECTION ---
       theme: {
-          colorPalette: 'strawberry-cream',
+          colorPalette: 'chocolate-caramel',
           font: {
               heading: 'poppins',
               body: 'Montserrat'
