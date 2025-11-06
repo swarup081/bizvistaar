@@ -21,6 +21,8 @@ const kalam = Kalam({
   display: 'swap'
 });
 
+
+
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: 'swap' });
 const roboto = Roboto({ variable: "--font-roboto", subsets: ["latin"], weight: ['400', '700'], display: 'swap' });
 const lato = Lato({ variable: "--font-lato", subsets: ["latin"], weight: ['400', '700'], display: 'swap' });
@@ -34,7 +36,7 @@ const cormorantGaramond = Cormorant_Garamond({
   variable: "--font-cormorant-garamond",
   subsets: ["latin"],
   weight: "400",
-  style: "italic"
+  style: ["normal", "italic"] // <-- Change this to an array
 });
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -47,6 +49,8 @@ export const metadata = {
   title: "BizVistar",
   description: "Empowering Local Businesses",
 };
+
+
 
 export default function RootLayout({ children }) {
   return (
