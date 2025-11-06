@@ -1,30 +1,105 @@
-// src/app/templates/brewhaven/data.js
+// --- NEW DYNAMIC CATEGORIES ---
+const categories = [
+    { id: 'c1', name: 'Coffee' },
+    { id: 'c2', name: 'Pastries' },
+    { id: 'c3', name: 'Specialty Drinks' },
+    { id: 'c4', name: 'Light Bites' },
+];
 
-// This object contains all the dynamic content AND theme for the site.
-// It is structured to be read by the src/app/templates/brewhaven/page.js component.
+// --- NEW MASTER PRODUCT LIST ---
+// I've combined 'menu.items' and 'specialty.items' into a master list.
+const allProducts = [
+    { 
+        id: 1, 
+        name: "Classic Espresso", 
+        price: 3.50, 
+        category: 'c1', 
+        image: "/blissly/specialty-espresso.jpg", // Placeholder, you can change this
+        description: "A rich, full-bodied shot with notes of chocolate and citrus." 
+    },
+    { 
+        id: 2, 
+        name: "Creamy Cappuccino", 
+        price: 4.50, 
+        category: 'c1', 
+        image: "/blissly/esra-afsar-JqXUZxoLwlE-unsplash.jpg", // From original specialty
+        description: "Perfectly balanced espresso, steamed milk, and a cap of foam." 
+    },
+    { 
+        id: 3, 
+        name: "Artisanal Latte", 
+        price: 5.00, 
+        category: 'c1', 
+        image: "/blissly/hero_image.png", // Placeholder
+        description: "Our signature espresso with velvety smooth steamed milk." 
+    },
+    { 
+        id: 4, 
+        name: "Pour Over (V60)", 
+        price: 5.50, 
+        category: 'c3', 
+        image: "/blissly/john-amachaab-z0IktCV6PAg-unsplash.jpg", // From original events
+        description: "A clean, bright cup highlighting our single-origin of the day." 
+    },
+    { 
+        id: 5, 
+        name: "Croissant", 
+        price: 35.00, // Price from specialty
+        category: 'c2', 
+        image: "/blissly/vicky-nguyen-a4xoMVKzbak-unsplash.jpg", // From original specialty
+        description: "Flaky, buttery, and baked fresh every morning." 
+    },
+    { 
+        id: 6, 
+        name: "Avocado Toast", 
+        price: 8.50, 
+        category: 'c4', 
+        image: "/blissly/keghan-crossland-ZZxmc66SjfM-unsplash.jpg", // From original about
+        description: "Sourdough toast with fresh avocado, chili flakes, and sea salt." 
+    },
+    { 
+        id: 7, 
+        name: "Cookies", 
+        price: 18.00, 
+        category: 'c2', 
+        image: "/blissly/caroline-badran-UvZiEu43tcQ-unsplash.jpg", // From original specialty
+        description: "Assorted freshly baked cookies, perfect with a coffee." 
+    },
+    { 
+        id: 8, 
+        name: "Matcha Green Tea Latte", 
+        price: 25.00, // Price from specialty
+        category: 'c3', 
+        image: "/blissly/mustafa-akin-4fa1DuXBTKw-unsplash.jpg", // From original specialty
+        description: "Premium matcha powder whisked with steamed milk for a smooth, earthy taste." 
+    }
+];
+
 
 export const businessData = {
     // --- GENERAL BUSINESS INFO ---
-    name: "Brewhaven", // This will be replaced by the name from local storage
-    logoText: "Brewhaven", // This will be replaced by the name from local storage
+    name: "Brewhaven",
+    logoText: "Brewhaven",
+    whatsappNumber: "91123456789", // Added for checkout
+
+    // --- NEW: Master Lists ---
+    categories: categories,
+    allProducts: allProducts,
 
     // --- THEME SECTION ---
     theme: {
-        // Choose a palette from globals.css that defines an 'accent' color
-        // 'elegant-botanics' has a warm, artisanal feel that fits a coffee shop
         colorPalette: 'elegant-botanics', 
         font: {
-            // These fonts must be loaded in src/app/layout.js
-            heading: 'kalam', // A classy serif font
-            body: 'Lato'             // A clean, readable sans-serif font
+            heading: 'kalam',
+            body: 'Lato'
         }
     },
 
-    // --- NAVIGATION ---
+    // --- NAVIGATION (UPDATED) ---
     navigation: [
-        { href: "#home", label: "Home" },
+        { href: "/templates/blissly", label: "Home" },
+        { href: "/templates/blissly/shop", label: "Shop" },
         { href: "#about", label: "About" },
-        { href: "#menu", label: "Menu" },
         { href: "#events", label: "Events" },
         { href: "#contact", label: "Contact" },
     ],
@@ -32,15 +107,15 @@ export const businessData = {
     // --- HEADER BUTTON ---
     headerButton: {
         text: "Order Online",
-        href: "#menu" // Links to the menu section
+        href: "/templates/blissly/shop" // Links to the new shop page
     },
 
-    // --- PAGE SECTIONS ---
+    // --- PAGE SECTIONS (Original content preserved) ---
     hero: {
         title: "Where Every Sip is an Experience",
         subtitle: "Discover our passion for artisanal coffee, handcrafted pastries, and a space designed for you to relax, work, or connect.",
         cta: "View Our Menu",
-        image: "/blissly/hero_image.png" // Placeholder image path
+        image: "/blissly/hero_image.png"
     },
 
     events: {
@@ -67,7 +142,7 @@ export const businessData = {
     about: {
         title: "From Bean to Cup, With Passion",
         text: "Brewhaven was born from a simple idea: coffee should be an experience, not just a routine. We partner with sustainable farms, roast our beans in-house, and train our baristas to pull the perfect shot, every time.",
-        image: "/blissly/keghan-crossland-ZZxmc66SjfM-unsplash.jpg", // Placeholder image path
+        image: "/blissly/keghan-crossland-ZZxmc66SjfM-unsplash.jpg",
         features: [
             {
                 title: "Ethically Sourced Beans",
@@ -88,6 +163,7 @@ export const businessData = {
         badge: "Our Menu",
         title: "Crafted for You",
         description: "From our signature espresso blends to freshly-baked pastries and light bites, there's something to brighten your day.",
+        // This list is now for display on the homepage, not the master list
         items: [
             { name: "Classic Espresso", price: "3.50", description: "A rich, full-bodied shot with notes of chocolate and citrus." },
             { name: "Creamy Cappuccino", price: "4.50", description: "Perfectly balanced espresso, steamed milk, and a cap of foam." },
@@ -100,7 +176,6 @@ export const businessData = {
     },
 
     testimonials: {
-        // 'items' is an array of testimonial objects
         items: [
             {
                 quote: "This is my absolute favorite spot. The coffee is consistently excellent and the atmosphere is so cozy and welcoming!",
@@ -120,14 +195,10 @@ export const businessData = {
         ]
     },
 
+    // --- UPDATED to reference product IDs ---
     specialty: {
         title: "Our Specialty",
-        items: [
-            { name: "Cappuccino", price: "22.00", image: "/blissly/esra-afsar-JqXUZxoLwlE-unsplash.jpg" },
-            { name: "Cookies", price: "18.00", image: "/blissly/caroline-badran-UvZiEu43tcQ-unsplash.jpg" },
-            { name: "Matcha Green Tea Latte", price: "25.00", image: "/blissly/mustafa-akin-4fa1DuXBTKw-unsplash.jpg" },
-            { name: "Croissant", price: "35.00", image: "/blissly/vicky-nguyen-a4xoMVKzbak-unsplash.jpg" }
-        ]
+        itemIDs: [2, 7, 8, 5] // IDs from allProducts: Cappuccino, Cookies, Matcha, Croissant
     },
 
     cta: {
@@ -145,9 +216,9 @@ export const businessData = {
         },
         links: {
             pages: [
-                { name: "Home", url: "#home" },
+                { name: "Home", url: "/templates/blissly" },
+                { name: "Shop", url: "/templates/blissly/shop" },
                 { name: "About", url: "#about" },
-                { name: "Menu", url: "#menu" },
                 { name: "Events", url: "#events" }
             ],
             utility: [
@@ -159,9 +230,8 @@ export const businessData = {
         location: {
             title: "Location",
             address: "123 Coffee St, Bean Town, CA 90210",
-            hours: "Mon - Fri: 7am - 6pm\nSat - Sun: 8am - 5pm" // Using \n for line breaks
+            hours: "Mon - Fri: 7am - 6pm\nSat - Sun: 8am - 5pm"
         },
-        // This copyright text will also be dynamically updated by the page component
         copyright: `© ${new Date().getFullYear()} Brewhaven. All Rights Reserved.`
     }
 };
