@@ -612,7 +612,7 @@ export default function EditorSidebar({
             {/* --- FLARA ABOUT (feature1) --- */}
             {businessData?.feature1 && (
               <AccordionItem
-                title="About Section (Feature 1)"
+                title="About Section "
                 icon={Home}
                 isOpen={activeAccordion === 'about'}
                 onClick={() => toggleAccordion('about')}
@@ -679,7 +679,7 @@ export default function EditorSidebar({
             {/* --- FLARA FEATURE 2 --- */}
             {businessData?.feature2 && (
                <AccordionItem
-                title="Feature Section 2"
+                title="Feature Section "
                 icon={Columns}
                 isOpen={activeAccordion === 'feature2'}
                 onClick={() => toggleAccordion('feature2')}

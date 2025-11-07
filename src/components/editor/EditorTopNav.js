@@ -304,7 +304,7 @@ export default function EditorTopNav({
           ) : (
             <button 
               disabled
-              className="p-2 rounded-md text-gray-300 cursor-not-allowed"
+              className="p-2 rounded-md text-gray-300 "
               aria-label="Undo (disabled)"
             >
               <IconUndo />
@@ -324,7 +324,7 @@ export default function EditorTopNav({
           ) : (
              <button 
               disabled
-              className="p-2 rounded-md text-gray-300 cursor-not-allowed"
+              className="p-2 rounded-md text-gray-300 "
               aria-label="Redo (disabled)"
             >
               <IconRedo />
