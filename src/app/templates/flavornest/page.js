@@ -29,7 +29,7 @@ export default function FlavorNestPage() {
                 </div>
             </section>
 
-            <section id="about" className="py-16">
+            <section id="about" className="py-16"> {/* <-- ID ADDED */}
                 <div className="container mx-auto px-6 flex flex-col md:flex-row items-center gap-12">
                     <div className="md:w-1/2 text-center md:text-left">
                         <h3 className="text-3xl font-bold text-brand-secondary font-serif">{businessData.about.title}</h3>
@@ -42,7 +42,7 @@ export default function FlavorNestPage() {
             </section>
 
             {/* This section now correctly uses the signatureProducts list */}
-            <section id="menu" className="py-16 bg-brand-primary">
+            <section id="menu" className="py-16 bg-brand-primary"> {/* <-- ID ADDED */}
                 <div className="container mx-auto px-6">
                     <h2 className="text-4xl font-bold text-center text-brand-secondary mb-12 font-serif">{businessData.menu.title}</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -61,7 +61,7 @@ export default function FlavorNestPage() {
                 </div>
             </section>
 
-            <section id="reviews" className="py-16">
+            <section id="reviews" className="py-16"> {/* <-- ID ADDED */}
                 <div className="container mx-auto px-6">
                     <h2 className="text-4xl font-bold text-center text-brand-secondary mb-12 font-serif">{businessData.reviews.title}</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

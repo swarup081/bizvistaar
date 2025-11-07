@@ -80,6 +80,15 @@ export const businessData = {
         { name: 'Checkout', path: '/templates/flavornest/checkout' }
     ],
 
+    // --- SECTION ID MAP (FIXED) ---
+    // Section IDs for Editor Navigation
+    aboutSectionId: "about",
+    menuSectionId: "menu", // Links "Homepage Menu" to the "menu" section
+    reviewsSectionId: "reviews",
+    bestSellersSectionId: "menu", // Links "Products" accordion to the "menu" section
+    footerSectionId: "contact", // <-- ADDED THIS LINE
+    // --- END OF FIX ---
+
     // --- THEME SECTION ---
     theme: {
         colorPalette: 'warm-bakery',

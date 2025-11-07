@@ -1,6 +1,6 @@
 'use client';
 import { useCart } from './cartContext.js';
-import { businessData } from './data.js';
+import { useTemplateContext } from './templateContext.js'; // <-- 1. IMPORT THE CONTEXT
 
 // --- Header Component ---
 export const Header = ({ business, cartCount, onCartClick }) => (
@@ -71,13 +71,25 @@ export const ProductCard = ({ item }) => {
 };
 
 // --- Footer Component ---
-export const Footer = ({ businessData }) => (
-    <footer className="bg-brand-secondary text-white py-8">
-        <div className="container mx-auto px-6 text-center">
-            <p>{businessData.footer.copyright} | Made By <a href={businessData.footer.madeByLink} target="_blank" rel="noopener noreferrer" className="underline hover:text-brand-primary transition-colors">{businessData.footer.madeBy}</a></p>
-            <p className="mt-2">{businessData.footer.socialText} <a href={businessData.footer.socialLink} target="_blank" rel="noopener noreferrer" className="underline hover:text-brand-primary transition-colors">Instagram</a></p>
-        </div>
-    </footer>
-);
+// --- 2. UPDATED TO USE CONTEXT & ADDED ID ---
+export const Footer = () => {
+    // Get businessData from the context
+    const { businessData } = useTemplateContext();
+
+    // Guard against data not being loaded yet
+    if (!businessData?.footer) {
+        return <footer id="contact" className="bg-brand-secondary text-white py-8">...</footer>;
+    }
+
+    return (
+        <footer id="contact" className="bg-brand-secondary text-white py-8"> {/* <-- ID ADDED */}
+            <div className="container mx-auto px-6 text-center">
+                <p>{businessData.footer.copyright} | Made By <a href={businessData.footer.madeByLink} target="_blank" rel="noopener noreferrer" className="underline hover:text-brand-primary transition-colors">{businessData.footer.madeBy}</a></p>
+                <p className="mt-2">{businessData.footer.socialText} <a href={businessData.footer.socialLink} target="_blank" rel="noopener noreferrer" className="underline hover:text-brand-primary transition-colors">Instagram</a></p>
+            </div>
+        </footer>
+    );
+};
+// --- 3. END OF FOOTER FIX ---
 
 // --- The old WhatsApp CartModal has been removed ---

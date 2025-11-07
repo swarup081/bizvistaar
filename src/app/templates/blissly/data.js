@@ -94,6 +94,17 @@ export const businessData = {
         { name: 'Checkout', path: '/templates/blissly/checkout' }
     ],
 
+    // --- THIS IS THE NEWLY ADDED BLOCK ---
+    // Section IDs for Editor Navigation
+    aboutSectionId: "about",
+    eventsSectionId: "events",
+    menuSectionId: "menu",
+    testimonialsSectionId: "testimonials",
+    bestSellersSectionId: "specialty", // Links "Products" accordion to the "Our Specialty" section
+    ctaSectionId: "cta-final", // Links "CTA" accordion to the "cta-final" section
+    footerSectionId: "contact",
+    // --- END OF NEW BLOCK ---
+
     // --- THEME SECTION ---
     theme: {
         colorPalette: 'elegant-botanics', 
