@@ -1,28 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
-  LayoutDashboard, Settings, Home, Store, Calendar, Tag, MessageCircle, Contact, Info,
+  LayoutDashboard, Settings, Home, Store, Calendar, Tag, MessageCircle, Contact, Plus, FileText, Info, Image as ImageIcon, ShoppingBag, Pencil, ChevronDown, CheckCircle, UploadCloud, Trash, Search, X, Columns,
   Paintbrush, // Changed from Palette
+  Check,
+  TrendingUp, // Added for Stats
+  Megaphone // Added for CTA
 } from 'lucide-react';
-
-// Import the new reusable controls
-import {
-  SectionTitle,
-  EditorSelect,
-  ColorSwatchButton,
-  fontOptions,
-  colorPalettes
-} from './EditorControls.js';
-
-// Import the new template-specific editors
-// This is what was causing the "Module not found" error.
-// We will create these files in the next steps.
-import FlaraEditor from './templates/FlaraEditor.js';
-import AvenixEditor from './templates/AvenixEditor.js';
-import BlisslyEditor from './templates/BlisslyEditor.js';
-import FlavornestEditor from './templates/FlavornestEditor.js';
-
 
 // Reusable tab button
 const MainTab = ({ icon: Icon, label, isActive, onClick }) => (
@@ -53,17 +38,265 @@ const SidebarLink = ({ icon: Icon, label, isActive = false, onClick }) => (
     </button>
 );
 
+// Reusable section title
+const SectionTitle = ({ label }) => (
+  <div className="flex items-center justify-between mt-6 mb-3">
+      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
+        {label}
+      </h3>
+  </div>
+);
+
+// --- UPDATED: EditorInput for "Instant Update" UI (updates on every keystroke) ---
+const EditorInput = ({ label, value, onChange, isRequired = false }) => {
+    return (
+        <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+                {label} {isRequired && <span className="text-red-500">*</span>}
+            </label>
+            <input
+                type="text"
+                value={value || ''} // The box shows the *real* data
+                onChange={onChange} // This updates the real data on every keystroke
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+        </div>
+    );
+};
+
+// --- UPDATED: EditorTextArea for "Instant Update" UI (updates on every keystroke) ---
+const EditorTextArea = ({ label, value, onChange }) => {
+    return (
+        <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+                {label}
+            </label>
+            <textarea
+                value={value || ''} // The box shows the *real* data
+                onChange={onChange} // This updates the real data on every keystroke
+                rows={3}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            />
+        </div>
+    );
+};
+
+
+// Custom Searchable Select Dropdown
+const EditorSelect = ({ label, value, onChange, options = [], placeholder = "Select an option" }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const dropdownRef = useRef(null);
+
+    const selectedOption = options.find(option => option.value === value);
+    const displayValue = selectedOption ? selectedOption.label : placeholder;
+
+    const filteredOptions = options.filter(option => 
+        option.label.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+                setSearchTerm("");
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const handleSelect = (newValue) => {
+        onChange({ target: { value: newValue } });
+        setIsOpen(false);
+        setSearchTerm("");
+    };
+
+    return (
+        <div className="mb-4" ref={dropdownRef}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <div className="relative">
+                <button
+                    type="button"
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex justify-between items-center"
+                >
+                    <span className={selectedOption ? "text-gray-900" : "text-gray-500"}>
+                        {displayValue}
+                    </span>
+                    <ChevronDown size={16} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : 'rotate-0'}`} />
+                </button>
+                
+                {isOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-hidden flex flex-col">
+                        <div className="p-2 border-b border-gray-200">
+                            <div className="relative">
+                                <Search size={16} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder="Search..."
+                                    className="w-full pl-8 pr-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                            </div>
+                        </div>
+                        
+                        <ul className="overflow-y-auto flex-grow">
+                            {filteredOptions.length > 0 ? (
+                                filteredOptions.map(option => (
+                                    <li
+                                        key={option.value}
+                                        onClick={() => handleSelect(option.value)}
+                                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 hover:text-blue-600 ${option.value === value ? 'bg-blue-50 text-blue-600' : 'text-gray-900'}`}
+                                    >
+                                        {option.label}
+                                    </li>
+                                ))
+                            ) : (
+                                <li className="px-3 py-2 text-sm text-gray-500">No options found.</li>
+                            )}
+                        </ul>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Image Upload Control
+const EditorImageUpload = ({ label, value, onChange }) => {
+    const inputId = `file-upload-${label.replace(/\s+/g, '-')}`;
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                onChange({ target: { value: reader.result }});
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    return (
+        <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <div className="flex items-center gap-2">
+                <div className="w-12 h-12 rounded border border-gray-300 bg-gray-100 flex-shrink-0 flex items-center justify-center">
+                    {value ? (
+                        <img src={value} alt="Preview" className="w-full h-full object-cover rounded" />
+                    ) : (
+                        <ImageIcon size={24} className="text-gray-400" />
+                    )}
+                </div>
+                <label 
+                    htmlFor={inputId} 
+                    className="cursor-pointer flex-grow px-3 py-2 bg-white text-gray-700 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 text-center"
+                >
+                    <span>Upload Image</span>
+                    <input
+                        id={inputId}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageChange}
+                    />
+                </label>
+            </div>
+        </div>
+    );
+};
+
+// Accordion UI
+const AccordionItem = ({ title, icon: Icon, isOpen, onClick, children }) => {
+    const displayIcon = <Icon size={18} className="text-gray-500" />;
+        
+    return (
+        <div className="border-b border-gray-200">
+            <button
+                onClick={onClick}
+                className="w-full flex items-center justify-between p-4 text-left text-gray-800 hover:bg-gray-50 transition-colors"
+            >
+                <div className="flex items-center gap-3">
+                    {displayIcon}
+                    <span className="font-medium">{title}</span>
+                </div>
+                <ChevronDown 
+                    size={18} 
+                    className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : 'rotate-0'}`} 
+                />
+            </button>
+            {isOpen && (
+                <div className="p-4 bg-gray-50 border-t border-gray-200">
+                    {children}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// --- NEW: Color Swatch Button (from screenshot) ---
+// This component is now simpler: no border, no name.
+const ColorSwatchButton = ({ palette, isSelected, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`block w-full text-left p-2 rounded-lg transition-all ${
+      isSelected 
+        ? 'bg-blue-50' // Selected state background
+        : 'bg-transparent hover:bg-gray-100' // Default and hover state
+    }`}
+  >
+    {/* Grid of 5 swatches. */}
+    <div className="grid grid-cols-5 h-12 w-full rounded-md overflow-hidden border border-gray-300">
+      <div style={{ backgroundColor: palette.colors[0] }}></div>
+      <div style={{ backgroundColor: palette.colors[1] }}></div>
+      <div style={{ backgroundColor: palette.colors[2] }}></div>
+      <div style={{ backgroundColor: palette.colors[3] }}></div>
+      <div style={{ backgroundColor: palette.colors[4] }}></div>
+    </div>
+  </button>
+);
+
+
+// --- NEW: Font options (Must match names in layout.js) ---
+const fontOptions = [
+  { value: 'Poppins', label: 'Poppins' },
+  { value: 'Montserrat', label: 'Montserrat' },
+  { value: 'Lora', label: 'Lora' },
+  { value: 'Lato', label: 'Lato' },
+  { value: 'Playfair_Display', label: 'Playfair Display' },
+  { value: 'Cormorant_Garamond', label: 'Cormorant Garamond' },
+  { value: 'DM_Sans', label: 'DM Sans' },
+  { value: 'Kalam', label: 'Kalam' },
+  { value: 'Roboto', label: 'Roboto' },
+  { value: 'Inter', label: 'Inter' },
+];
+
+// --- NEW: Curated list of 8 color palettes (with 5 colors each) ---
+const colorPalettes = [
+  { name: 'Sage Green', class: 'sage-green', colors: ['#F7F9F5', '#EBF2E8', '#A5D6A7', '#588157', '#344E41'] },
+  { name: 'Elegant Botanics', class: 'elegant-botanics', colors: ['#FCFBF9', '#F4ECE8', '#B98B7F', '#8A9A8C', '#4B413E'] },
+  { name: 'Avenix Minimal', class: 'avenix-minimal', colors: ['#F8F7F5', '#FFFFFF', '#D81B60', '#1A1A1A', '#000000'] },
+  { name: 'Brewhaven Cream', class: 'brewhaven-cream', colors: ['#FBF9F3', '#F5EFE6', '#F5A623', '#8A6E63', '#4B3832'] },
+  { name: 'Warm Bakery', class: 'warm-bakery', colors: ['#FFF8F2', '#F9EBE4', '#A14D2A', '#8D6E63', '#5D4037'] },
+  { name: 'Dark Roast', class: 'dark-roast', colors: ['#F3EFE9', '#E4A757', '#3D2F28', '#211A16', '#000000'] },
+  { name: 'Sky Blue', class: 'sky-blue', colors: ['#F0F9FF', '#E0F2FE', '#38bdf8', '#0284C7', '#075985'] },
+  { name: 'Strawberry Cream', class: 'strawberry-cream', colors: ['#FFF7F9', '#FDE8EF', '#ec4899', '#D81B60', '#502D39'] },
+];
+
 
 export default function EditorSidebar({ 
   activeTab, 
   onTabChange,
   businessData,
   setBusinessData, // This is handleDataUpdate from layout
-  onPageChange,
-  templateName // <-- This prop is passed from EditorLayout
+  onPageChange 
 }) {
 
   const [activeAccordion, setActiveAccordion] = useState('global');
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   const handleDataChange = (path, value) => {
     setBusinessData(prev => {
@@ -161,11 +394,12 @@ export default function EditorSidebar({
 
   // --- Handlers for dynamic lists ---
   
-  const handleAddCategory = (newCategoryName) => {
+  const handleAddCategory = () => {
       if (!newCategoryName) return;
       const newCategory = { id: `c${Date.now()}`, name: newCategoryName };
       const newCategories = [...(businessData.categories || []), newCategory];
       handleDataChange('categories', newCategories);
+      setNewCategoryName("");
   };
 
   const handleRemoveCategory = (categoryId) => {
@@ -210,63 +444,34 @@ export default function EditorSidebar({
     return path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : defaultValue), obj);
   }
 
-  // Memoize derived lists to prevent unnecessary re-renders
-  const allProducts = useMemo(() => Array.isArray(businessData?.allProducts) ? businessData.allProducts : [], [businessData?.allProducts]);
-  const allCategories = useMemo(() => Array.isArray(businessData?.categories) ? businessData.categories : [], [businessData?.categories]);
+  const allProducts = Array.isArray(businessData?.allProducts) ? businessData.allProducts : [];
+  const allCategories = Array.isArray(businessData?.categories) ? businessData.categories : [];
   
-  const productOptions = useMemo(() => allProducts.map(p => ({ value: p.id, label: p.name })), [allProducts]);
-  const categoryOptions = useMemo(() => allCategories.map(c => ({ value: c.id, label: c.name })), [allCategories]);
+  const productOptions = allProducts.map(p => ({ value: p.id, label: p.name }));
+  const categoryOptions = allCategories.map(c => ({ value: c.id, label: c.name }));
   
-  const homepageProductIDs = useMemo(() => [
-    ...getSafe(businessData, 'collection.itemIDs', []), 
-    ...getSafe(businessData, 'bestSellers.itemIDs', []), 
-    ...getSafe(businessData, 'newArrivals.itemIDs', []), 
-    ...getSafe(businessData, 'featured.itemIDs', []),
-    ...getSafe(businessData, 'specialty.itemIDs', []),
-    ...getSafe(businessData, 'menu.itemIDs', [])
-  ], [businessData]);
+  const collectionIDs = getSafe(businessData, 'collection.itemIDs', []);
+  const bestSellerIDs = getSafe(businessData, 'bestSellers.itemIDs', []);
+  const newArrivalsIDs = getSafe(businessData, 'newArrivals.itemIDs', []);
+  const featuredIDs = getSafe(businessData, 'featured.itemIDs', []);
+  const specialtyIDs = getSafe(businessData, 'specialty.itemIDs', []);
+  const menuIDs = getSafe(businessData, 'menu.itemIDs', []);
+  
+  // Create a combined list of all product IDs used on the homepage
+  const homepageProductIDs = [
+    ...collectionIDs, 
+    ...bestSellerIDs, 
+    ...newArrivalsIDs, 
+    ...featuredIDs,
+    ...specialtyIDs,
+    ...menuIDs
+  ];
 
-  const homepageProductOptions = useMemo(() => productOptions.filter(
+  // Options for homepage sections should not include products already selected in *any* homepage section
+  const homepageProductOptions = productOptions.filter(
       p => !homepageProductIDs.includes(p.value)
-  ), [productOptions, homepageProductIDs]);
+  );
 
-  // --- Props bundle to pass to child editors ---
-  const editorProps = {
-    businessData,
-    handleDataChange,
-    handleSyncedNameChange,
-    toggleAccordion,
-    activeAccordion,
-    getSafe,
-    productOptions,
-    categoryOptions,
-    homepageProductOptions,
-    allCategories,
-    allProducts,
-    handleAddCategory,
-    handleRemoveCategory,
-    handleAddProduct,
-    handleRemoveProduct
-  };
-
-  // --- RENDER FUNCTION ---
-  const renderTemplateEditor = () => {
-    switch (templateName) {
-      case 'flara':
-        return <FlaraEditor {...editorProps} />;
-      case 'avenix':
-        return <AvenixEditor {...editorProps} />;
-      case 'blissly':
-        return <BlisslyEditor {...editorProps} />;
-      case 'flavornest':
-        return <FlavornestEditor {...editorProps} />;
-      default:
-        // This is the error you are seeing.
-        // It's likely because you are on a template URL (like /editor/xyz)
-        // that we haven't created an editor component for yet.
-        return <p className="p-4 text-sm text-gray-500">No editor available for this template.</p>;
-    }
-  };
 
   return (
     <div className="w-80 flex flex-col h-full bg-white">
@@ -295,14 +500,615 @@ export default function EditorSidebar({
       {/* Conditional Content Area */}
       <div className="flex-grow overflow-y-auto">
         
-        {/* --- WEBSITE Panel (NOW DYNAMIC) --- */}
-        {activeTab === 'website' && renderTemplateEditor()}
+        {/* WEBSITE Panel (NEW ACCORDION UI) */}
+        {activeTab === 'website' && (
+          <section>
+            <AccordionItem
+              title="Global Settings"
+              icon={Info}
+              isOpen={activeAccordion === 'global'}
+              onClick={() => toggleAccordion('global')}
+            >
+              <EditorInput
+                label="Announcement Bar"
+                value={getSafe(businessData, 'announcementBar')}
+                onChange={(e) => handleDataChange('announcementBar', e.target.value)}
+              />
+              {/* --- UPDATED: Business Name --- */}
+              <EditorInput
+                label="Business Name"
+                value={getSafe(businessData, 'name')}
+                onChange={(e) => handleSyncedNameChange(e.target.value)}
+                isRequired={true}
+              />
+              {/* --- UPDATED: Logo Text --- */}
+              <EditorInput
+                label="Logo Text"
+                value={getSafe(businessData, 'logoText')}
+                onChange={(e) => handleSyncedNameChange(e.target.value)}
+                isRequired={true}
+              />
+              <EditorInput
+                label="Contact Phone / WhatsApp"
+                value={getSafe(businessData, 'whatsappNumber')}
+                onChange={(e) => handleDataChange('whatsappNumber', e.target.value)}
+              />
+            </AccordionItem>
+            
+            {/* --- GENERIC HERO (for flara) --- */}
+            {businessData?.hero && (
+              <AccordionItem
+                title="Hero Section"
+                icon={ImageIcon}
+                isOpen={activeAccordion === 'hero'}
+                onClick={() => toggleAccordion('hero')}
+              >
+                <EditorInput
+                  label="Title"
+                  value={getSafe(businessData, 'hero.title')}
+                  onChange={(e) => handleDataChange('hero.title', e.target.value)}
+                  isRequired={true}
+                />
+                <EditorTextArea
+                  label="Subtitle"
+                  value={getSafe(businessData, 'hero.subtitle')}
+                  onChange={(e) => handleDataChange('hero.subtitle', e.target.value)}
+                />
+                <EditorInput
+                  label="Button Text"
+                  value={getSafe(businessData, 'hero.cta')}
+                  onChange={(e) => handleDataChange('hero.cta', e.target.value)}
+                />
+                <EditorImageUpload
+                  label="Hero Image"
+                  value={getSafe(businessData, 'hero.image')}
+                  onChange={(e) => handleDataChange('hero.image', e.target.value)}
+                />
+              </AccordionItem>
+            )}
 
-        {/* --- THEME Panel (SHARED) --- */}
+            {/* --- AVENIX HERO --- */}
+            {businessData?.heelsHero && (
+              <AccordionItem
+                title="Hero Section"
+                icon={ImageIcon}
+                isOpen={activeAccordion === 'hero'}
+                onClick={() => toggleAccordion('hero')}
+              >
+                <EditorInput
+                  label="Line 1"
+                  value={getSafe(businessData, 'heelsHero.line1')}
+                  onChange={(e) => handleDataChange('heelsHero.line1', e.target.value)}
+                />
+                <EditorInput
+                  label="Line 2 (Accent)"
+                  value={getSafe(businessData, 'heelsHero.line2')}
+                  onChange={(e) => handleDataChange('heelsHero.line2', e.target.value)}
+                />
+                <EditorInput
+                  label="Line 3"
+                  value={getSafe(businessData, 'heelsHero.line3')}
+                  onChange={(e) => handleDataChange('heelsHero.line3', e.target.value)}
+                />
+                <EditorInput
+                  label="Bent Text (Accent)"
+                  value={getSafe(businessData, 'heelsHero.bentText')}
+                  onChange={(e) => handleDataChange('heelsHero.bentText', e.target.value)}
+                />
+                <EditorInput
+                  label="Button Text"
+                  value={getSafe(businessData, 'heelsHero.buttonText')}
+                  onChange={(e) => handleDataChange('heelsHero.buttonText', e.target.value)}
+                />
+                <EditorImageUpload
+                  label="Hero Image"
+                  value={getSafe(businessData, 'heelsHero.image')}
+                  onChange={(e) => handleDataChange('heelsHero.image', e.target.value)}
+                />
+              </AccordionItem>
+            )}
+
+            {/* --- FLARA ABOUT (feature1) --- */}
+            {businessData?.feature1 && (
+              <AccordionItem
+                title="About Section (Feature 1)"
+                icon={Home}
+                isOpen={activeAccordion === 'about'}
+                onClick={() => toggleAccordion('about')}
+              >
+                <EditorInput
+                  label="Title"
+                  value={getSafe(businessData, 'feature1.title')}
+                  onChange={(e) => handleDataChange('feature1.title', e.target.value)}
+                />
+                 <EditorTextArea
+                  label="Text"
+                  value={getSafe(businessData, 'feature1.text')}
+                  onChange={(e) => handleDataChange('feature1.text', e.target.value)}
+                />
+                <EditorTextArea
+                  label="Sub-text"
+                  value={getSafe(businessData, 'feature1.subtext')}
+                  onChange={(e) => handleDataChange('feature1.subtext', e.target.value)}
+                />
+                 <EditorImageUpload
+                  label="About Image"
+                  value={getSafe(businessData, 'feature1.image')}
+                  onChange={(e) => handleDataChange('feature1.image', e.target.value)}
+                />
+              </AccordionItem>
+            )}
+
+            {/* --- AVENIX ABOUT --- */}
+            {businessData?.about && (
+              <AccordionItem
+                title="About Section"
+                icon={Home}
+                isOpen={activeAccordion === 'about'}
+                onClick={() => toggleAccordion('about')}
+              >
+                <EditorInput
+                  label="Heading"
+                  value={getSafe(businessData, 'about.heading')}
+                  onChange={(e) => handleDataChange('about.heading', e.target.value)}
+                />
+                 <EditorTextArea
+                  label="Subheading Part 1"
+                  value={getSafe(businessData, 'about.subheading.part1')}
+                  onChange={(e) => handleDataChange('about.subheading.part1', e.target.value)}
+                />
+                <EditorTextArea
+                  label="Subheading Part 2"
+                  value={getSafe(businessData, 'about.subheading.part2')}
+                  onChange={(e) => handleDataChange('about.subheading.part2', e.target.value)}
+                />
+                <EditorTextArea
+                  label="Statement"
+                  value={getSafe(businessData, 'about.statement')}
+                  onChange={(e) => handleDataChange('about.statement', e.target.value)}
+                />
+                 <EditorImageUpload
+                  label="Large Image"
+                  value={getSafe(businessData, 'about.largeImage')}
+                  onChange={(e) => handleDataChange('about.largeImage', e.target.value)}
+                />
+              </AccordionItem>
+            )}
+            
+            {/* --- FLARA FEATURE 2 --- */}
+            {businessData?.feature2 && (
+               <AccordionItem
+                title="Feature Section 2"
+                icon={Columns}
+                isOpen={activeAccordion === 'feature2'}
+                onClick={() => toggleAccordion('feature2')}
+              >
+                <EditorInput
+                  label="Title"
+                  value={getSafe(businessData, 'feature2.title')}
+                  onChange={(e) => handleDataChange('feature2.title', e.target.value)}
+                />
+                 <EditorTextArea
+                  label="Text"
+                  value={getSafe(businessData, 'feature2.text')}
+                  onChange={(e) => handleDataChange('feature2.text', e.target.value)}
+                />
+                 <EditorTextArea
+                  label="Sub-text"
+                  value={getSafe(businessData, 'feature2.subtext')}
+                  onChange={(e) => handleDataChange('feature2.subtext', e.target.value)}
+                />
+                 <EditorImageUpload
+                  label="Image 1"
+                  value={getSafe(businessData, 'feature2.image1')}
+                  onChange={(e) => handleDataChange('feature2.image1', e.target.value)}
+                />
+                <EditorImageUpload
+                  label="Image 2"
+                  value={getSafe(businessData, 'feature2.image2')}
+                  onChange={(e) => handleDataChange('feature2.image2', e.target.value)}
+                />
+              </AccordionItem>
+            )}
+
+            {/* --- AVENIX CTA SECTION --- */}
+            {businessData?.ctaSection && (
+               <AccordionItem
+                title="CTA Section"
+                icon={Megaphone}
+                isOpen={activeAccordion === 'cta'}
+                onClick={() => toggleAccordion('cta')}
+              >
+                <EditorInput
+                  label="Title"
+                  value={getSafe(businessData, 'ctaSection.title')}
+                  onChange={(e) => handleDataChange('ctaSection.title', e.target.value)}
+                />
+                 <EditorTextArea
+                  label="Text"
+                  value={getSafe(businessData, 'ctaSection.text')}
+                  onChange={(e) => handleDataChange('ctaSection.text', e.target.value)}
+                />
+                <EditorInput
+                  label="Button Text"
+                  value={getSafe(businessData, 'ctaSection.cta')}
+                  onChange={(e) => handleDataChange('ctaSection.cta', e.target.value)}
+                />
+                 <EditorImageUpload
+                  label="Image"
+                  value={getSafe(businessData, 'ctaSection.image')}
+                  onChange={(e) => handleDataChange('ctaSection.image', e.target.value)}
+                />
+              </AccordionItem>
+            )}
+
+            {/* --- AVENIX STATS SECTION --- */}
+            {businessData?.stats && (
+               <AccordionItem
+                title="Stats Section"
+                icon={TrendingUp}
+                isOpen={activeAccordion === 'stats'}
+                onClick={() => toggleAccordion('stats')}
+              >
+                <EditorInput
+                  label="Title"
+                  value={getSafe(businessData, 'stats.title')}
+                  onChange={(e) => handleDataChange('stats.title', e.target.value)}
+                />
+                 <EditorTextArea
+                  label="Text"
+                  value={getSafe(businessData, 'stats.text')}
+                  onChange={(e) => handleDataChange('stats.text', e.target.value)}
+                />
+                <EditorInput
+                  label="Stat 1 Number"
+                  value={getSafe(businessData, 'stats.items.0.number')}
+                  onChange={(e) => handleDataChange('stats.items.0.number', e.target.value)}
+                />
+                <EditorInput
+                  label="Stat 1 Label"
+                  value={getSafe(businessData, 'stats.items.0.label')}
+                  onChange={(e) => handleDataChange('stats.items.0.label', e.target.value)}
+                />
+                <EditorInput
+                  label="Stat 2 Number"
+                  value={getSafe(businessData, 'stats.items.1.number')}
+                  onChange={(e) => handleDataChange('stats.items.1.number', e.target.value)}
+                />
+                <EditorInput
+                  label="Stat 2 Label"
+                  value={getSafe(businessData, 'stats.items.1.label')}
+                  onChange={(e) => handleDataChange('stats.items.1.label', e.target.value)}
+                />
+              </AccordionItem>
+            )}
+
+            <AccordionItem
+              title="Products & Categories"
+              icon={ShoppingBag}
+              isOpen={activeAccordion === 'products'}
+              onClick={() => toggleAccordion('products')}
+            >
+                {/* --- CATEGORY MANAGER --- */}
+                <h4 className="text-base font-semibold text-gray-800 mb-2">Categories</h4>
+                {allCategories.map((category, index) => (
+                    <div key={category.id} className="flex items-end gap-2">
+                        <EditorInput
+                            label={`Category ${index + 1}`}
+                            value={category.name}
+                            onChange={(e) => handleDataChange(`categories.${index}.name`, e.target.value)}
+                        />
+                        <button 
+                            onClick={() => handleRemoveCategory(category.id)}
+                            className="mb-4 p-2 text-gray-400 hover:text-red-500"
+                        >
+                            <Trash size={16} />
+                        </button>
+                    </div>
+                ))}
+                <div className="flex gap-2 mb-6">
+                    <input
+                        type="text"
+                        placeholder="New category name..."
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        className="flex-grow px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                        onClick={handleAddCategory}
+                        className="flex-shrink-0 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                    >
+                        Add
+                    </button>
+                </div>
+                
+                {/* --- PRODUCT MANAGER --- */}
+                <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">All Products</h4>
+                {allProducts.map((product, index) => (
+                    <div key={product.id || index} className="p-3 border rounded-md mb-2 bg-white relative">
+                        <button 
+                            onClick={() => handleRemoveProduct(product.id)}
+                            className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+                        >
+                            <Trash size={16} />
+                        </button>
+                        <EditorInput
+                            label={`Product ${index + 1} Name`}
+                            value={product.name}
+                            onChange={(e) => handleDataChange(`allProducts.${index}.name`, e.target.value)}
+                        />
+                        <EditorInput
+                            label={`Price`}
+                            value={product.price}
+                            onChange={(e) => handleDataChange(`allProducts.${index}.price`, Number(e.target.value) || 0)}
+                        />
+                        <EditorSelect
+                            label="Category"
+                            value={product.category}
+                            onChange={(e) => handleDataChange(`allProducts.${index}.category`, e.target.value)}
+                            options={categoryOptions}
+                            placeholder="Select a category"
+                        />
+                        <EditorImageUpload
+                            label={`Image`}
+                            value={product.image}
+                            onChange={(e) => handleDataChange(`allProducts.${index}.image`, e.target.value)}
+                        />
+                    </div>
+                ))}
+                <button
+                    onClick={handleAddProduct}
+                    className="w-full mt-2 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                >
+                    Add New Product
+                </button>
+            </AccordionItem>
+            
+            {/* --- GENERIC HOMEPAGE COLLECTION MANAGER --- */}
+            {homepageProductIDs.length > 0 && (
+              <AccordionItem
+                title="Home Page Collections"
+                icon={LayoutDashboard}
+                isOpen={activeAccordion === 'collection'}
+                onClick={() => toggleAccordion('collection')}
+              >
+                  <p className="text-xs text-gray-500 mb-3">Select the products to feature on your homepage.</p>
+                  
+                  {/* --- FLARA: collection --- */}
+                  {businessData?.collection && (
+                    <>
+                      <h4 className="text-base font-semibold text-gray-800 mb-2">"Our Collection" Section</h4>
+                      {collectionIDs.map((id, index) => (
+                          <EditorSelect
+                              key={`coll-${index}`}
+                              label={`Collection Slot ${index + 1}`}
+                              value={id}
+                              onChange={(e) => handleDataChange(`collection.itemIDs.${index}`, Number(e.target.value))}
+                              options={[...productOptions.filter(p => p.value === id), ...homepageProductOptions]} // Show current + available
+                              placeholder="Select a product"
+                          />
+                      ))}
+                    </>
+                  )}
+                  
+                  {/* --- FLARA: bestSellers --- */}
+                  {businessData?.bestSellers && (
+                    <>
+                      <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">"Best Sellers" Section</h4>
+                      {bestSellerIDs.map((id, index) => (
+                          <EditorSelect
+                              key={`best-${index}`}
+                              label={`Best Seller Slot ${index + 1}`}
+                              value={id}
+                              onChange={(e) => handleDataChange(`bestSellers.itemIDs.${index}`, Number(e.target.value))}
+                              options={[...productOptions.filter(p => p.value === id), ...homepageProductOptions]}
+                              placeholder="Select a product"
+                          />
+                      ))}
+                    </>
+                  )}
+
+                  {/* --- AVENIX: newArrivals --- */}
+                  {businessData?.newArrivals && (
+                    <>
+                      <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">"New Arrivals" Section</h4>
+                       <EditorInput
+                          label="Section Heading"
+                          value={getSafe(businessData, 'newArrivals.heading')}
+                          onChange={(e) => handleDataChange('newArrivals.heading', e.target.value)}
+                      />
+                       <EditorInput
+                          label="Section Title"
+                          value={getSafe(businessData, 'newArrivals.title')}
+                          onChange={(e) => handleDataChange('newArrivals.title', e.target.value)}
+                      />
+                      {newArrivalsIDs.map((id, index) => (
+                          <EditorSelect
+                              key={`new-${index}`}
+                              label={`New Arrival Slot ${index + 1}`}
+                              value={id}
+                              onChange={(e) => handleDataChange(`newArrivals.itemIDs.${index}`, Number(e.target.value))}
+                              options={[...productOptions.filter(p => p.value === id), ...homepageProductOptions]}
+                              placeholder="Select a product"
+                          />
+                      ))}
+                    </>
+                  )}
+
+                  {/* --- AVENIX: featured --- */}
+                  {businessData?.featured && (
+                    <>
+                      <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">"Featured Products" Section</h4>
+                       <EditorInput
+                          label="Section Heading"
+                          value={getSafe(businessData, 'featured.sectionHeading')}
+                          onChange={(e) => handleDataChange('featured.sectionHeading', e.target.value)}
+                      />
+                       <EditorInput
+                          label="Section Title"
+                          value={getSafe(businessData, 'featured.title')}
+                          onChange={(e) => handleDataChange('featured.title', e.target.value)}
+                      />
+                      <EditorImageUpload
+                          label="Large Image"
+                          value={getSafe(businessData, 'featured.largeImage')}
+                          onChange={(e) => handleDataChange('featured.largeImage', e.target.value)}
+                      />
+                      {featuredIDs.map((id, index) => (
+                          <EditorSelect
+                              key={`feat-${index}`}
+                              label={`Featured Slot ${index + 1}`}
+                              value={id}
+                              onChange={(e) => handleDataChange(`featured.itemIDs.${index}`, Number(e.target.value))}
+                              options={[...productOptions.filter(p => p.value === id), ...homepageProductOptions]}
+                              placeholder="Select a product"
+                          />
+                      ))}
+                    </>
+                  )}
+
+                  {/* --- BLISSLY: specialty --- */}
+                  {businessData?.specialty && (
+                    <>
+                      <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">"Our Specialty" Section</h4>
+                      <EditorInput
+                          label="Section Title"
+                          value={getSafe(businessData, 'specialty.title')}
+                          onChange={(e) => handleDataChange('specialty.title', e.target.value)}
+                      />
+                      {specialtyIDs.map((id, index) => (
+                          <EditorSelect
+                              key={`spec-${index}`}
+                              label={`Specialty Slot ${index + 1}`}
+                              value={id}
+                              onChange={(e) => handleDataChange(`specialty.itemIDs.${index}`, Number(e.target.value))}
+                              options={[...productOptions.filter(p => p.value === id), ...homepageProductOptions]}
+                              placeholder="Select a product"
+                          />
+                      ))}
+                    </>
+                  )}
+
+                  {/* --- FLAVORNEST: menu --- */}
+                  {businessData?.menu?.itemIDs && (
+                    <>
+                      <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">"Signature Menu" Section</h4>
+                       <EditorInput
+                          label="Section Title"
+                          value={getSafe(businessData, 'menu.title')}
+                          onChange={(e) => handleDataChange('menu.title', e.target.value)}
+                      />
+                      {menuIDs.map((id, index) => (
+                          <EditorSelect
+                              key={`menu-${index}`}
+                              label={`Menu Slot ${index + 1}`}
+                              value={id}
+                              onChange={(e) => handleDataChange(`menu.itemIDs.${index}`, Number(e.target.value))}
+                              options={[...productOptions.filter(p => p.value === id), ...homepageProductOptions]}
+                              placeholder="Select a product"
+                          />
+                      ))}
+                    </>
+                  )}
+              </AccordionItem>
+            )}
+
+            {/* --- GENERIC BLOG SECTION --- */}
+            {businessData?.blog && (
+              <AccordionItem
+                title="Blog Section"
+                icon={Pencil}
+                isOpen={activeAccordion === 'blog'}
+                onClick={() => toggleAccordion('blog')}
+              >
+                  <EditorInput
+                      label="Section Heading"
+                      value={getSafe(businessData, 'blog.heading')}
+                      onChange={(e) => handleDataChange('blog.heading', e.target.value)}
+                  />
+                  <EditorInput
+                      label="Section Title"
+                      value={getSafe(businessData, 'blog.title')}
+                      onChange={(e) => handleDataChange('blog.title', e.target.value)}
+                  />
+                   <p className="text-xs text-gray-500 mb-3 mt-4">Blog post content must be edited in the full Blog Manager (coming soon).</p>
+              </AccordionItem>
+            )}
+            
+            <AccordionItem
+              title="Footer"
+              icon={FileText}
+              isOpen={activeAccordion === 'footer'}
+              onClick={() => toggleAccordion('footer')}
+            >
+                {/* --- FLARA FOOTER LINKS --- */}
+                {businessData?.footer?.links?.about && (
+                  <>
+                    <h4 className="text-base font-semibold text-gray-800 mb-2">"About" Links</h4>
+                    <EditorInput
+                        label="Link 1 Title"
+                        value={getSafe(businessData, 'footer.links.about.0.name')}
+                        onChange={(e) => handleDataChange('footer.links.about.0.name', e.target.value)}
+                    />
+                    
+                    <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">"Categories" Links</h4>
+                    <EditorInput
+                        label="Link 1 Title"
+                        value={getSafe(businessData, 'footer.links.categories.0.name')}
+                        onChange={(e) => handleDataChange('footer.links.categories.0.name', e.target.value)}
+                    />
+
+                    <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">"Get Help" Links</h4>
+                    <EditorInput
+                        label="Link 1 Title"
+                        value={getSafe(businessData, 'footer.links.getHelp.0.name')}
+                        onChange={(e) => handleDataChange('footer.links.getHelp.0.name', e.target.value)}
+                    />
+                  </>
+                )}
+
+                {/* --- AVENIX FOOTER FIELDS --- */}
+                {businessData?.footer?.description && (
+                   <>
+                    <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">Footer Content</h4>
+                    <EditorInput
+                        label="Footer Description"
+                        value={getSafe(businessData, 'footer.description')}
+                        onChange={(e) => handleDataChange('footer.description', e.target.value)}
+                    />
+                    <EditorInput
+                        label="Contact Phone"
+                        value={getSafe(businessData, 'footer.contact.phone')}
+                        onChange={(e) => handleDataChange('footer.contact.phone', e.target.value)}
+                    />
+                    <EditorInput
+                        label="Contact Email"
+                        value={getSafe(businessData, 'footer.contact.email')}
+                        onChange={(e) => handleDataChange('footer.contact.email', e.target.value)}
+                    />
+                    <EditorInput
+                        label="Contact Address"
+                        value={getSafe(businessData, 'footer.contact.address')}
+                        onChange={(e) => handleDataChange('footer.contact.address', e.target.value)}
+                    />
+                     <EditorInput
+                        label="Subscribe Title"
+                        value={getSafe(businessData, 'footer.subscribe.title')}
+                        onChange={(e) => handleDataChange('footer.subscribe.title', e.target.value)}
+                    />
+                  </>
+                )}
+            </AccordionItem>
+
+          </section>
+        )}
+
+        {/* --- THEME Panel (UI UPDATED) --- */}
         {activeTab === 'theme' && (
           <div className="p-4">
             <SectionTitle label="Color Palette" />
             
+            {/* --- NEW: Two-column grid for swatches --- */}
             <div className="grid grid-cols-2 gap-3">
               {colorPalettes.map((palette) => (
                 <ColorSwatchButton
@@ -313,6 +1119,7 @@ export default function EditorSidebar({
                 />
               ))}
             </div>
+            {/* --- End of new grid --- */}
 
             <SectionTitle label="Fonts" />
             <EditorSelect
@@ -334,7 +1141,7 @@ export default function EditorSidebar({
         {/* --- END OF THEME Panel --- */}
 
 
-        {/* SETTINGS Panel (SHARED) */}
+        {/* SETTINGS Panel (With Refactored Shortcuts) */}
         {activeTab === 'settings' && (
           <div className="p-4">
             <section>
