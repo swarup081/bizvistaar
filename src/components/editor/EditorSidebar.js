@@ -43,68 +43,33 @@ const SectionTitle = ({ label }) => (
   </div>
 );
 
-// --- UPDATED: EditorInput for "Placeholder" UI ---
+// --- UPDATED: EditorInput for "Instant Update" UI (updates on every keystroke) ---
 const EditorInput = ({ label, value, onChange, isRequired = false }) => {
-    // This local state holds what the user is *currently typing*
-    const [localValue, setLocalValue] = useState("");
-
-    // When the user clicks away, update the *real* data
-    const onBlur = () => {
-        // Only update if the user actually typed something
-        if (localValue.trim() !== "") {
-            onChange({ target: { value: localValue } });
-        }
-        // Clear the box after blur
-        setLocalValue(""); 
-    };
-    
-    // This key is CRITICAL. It forces React to reset the input
-    // (and its localValue) when the *external* value changes.
-    // This fixes issues with undo/redo and reset.
-    const key = value || ""; 
-
     return (
         <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
                 {label} {isRequired && <span className="text-red-500">*</span>}
             </label>
             <input
-                key={key} // Force re-render when data changes
                 type="text"
-                value={localValue} // The box shows the *local* typing state (empty)
-                onChange={(e) => setLocalValue(e.target.value)} // Update local state as user types
-                onBlur={onBlur} // Update *real* data on blur
-                placeholder={value || "Type here..."} // The *real* data is shown as placeholder
+                value={value || ''} // The box shows the *real* data
+                onChange={onChange} // This updates the real data on every keystroke
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
         </div>
     );
 };
 
-// --- UPDATED: EditorTextArea for "Placeholder" UI ---
+// --- UPDATED: EditorTextArea for "Instant Update" UI (updates on every keystroke) ---
 const EditorTextArea = ({ label, value, onChange }) => {
-    const [localValue, setLocalValue] = useState("");
-    
-    const onBlur = () => {
-        if (localValue.trim() !== "") {
-            onChange({ target: { value: localValue } });
-        }
-        setLocalValue("");
-    };
-    
-    const key = value || "";
-
     return (
         <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
                 {label}
             </label>
             <textarea
-                key={key} // Force re-render
-                value={localValue}
-                onChange={(e) => setLocalValue(e.target.value)}
-                onBlur={onBlur}
-                placeholder={value || "Type here..."}
+                value={value || ''} // The box shows the *real* data
+                onChange={onChange} // This updates the real data on every keystroke
                 rows={3}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             />
