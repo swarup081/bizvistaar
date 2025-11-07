@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  Monitor, Smartphone, ChevronDown, Rocket, CheckCircle
+  Monitor, Smartphone, ChevronDown, Info // Use Info icon for modal
 } from 'lucide-react';
 
 // A simple reusable button component for the nav
@@ -33,7 +33,7 @@ const VerticalSeparator = () => (
   <div className="w-px h-[50px] bg-gray-300"></div>
 );
 
-// --- UPDATED Tooltip Component ---
+// --- Tooltip Component ---
 const Tooltip = ({ children, title, description, content }) => {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -80,6 +80,50 @@ const Tooltip = ({ children, title, description, content }) => {
 };
 // --- End Tooltip Component ---
 
+// --- Restart Confirmation Modal (Professional UI) ---
+const RestartConfirmationModal = ({ isOpen, onClose, onConfirm }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+        <div className="flex items-start">
+          <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+            <Info className="h-6 w-6 text-blue-600" aria-hidden="true" />
+          </div>
+          <div className="ml-4 text-left">
+            <h3 className="text-lg leading-6 font-medium text-gray-900">
+              Reset Template?
+            </h3>
+            <div className="mt-2">
+              <p className="text-sm text-gray-500">
+                Are you sure? This will reset all customizations for this template back to their defaults. Your startup info (like business name) will not be affected.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+          <button
+            type="button"
+            className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm"
+            onClick={onConfirm}
+          >
+            Yes, Reset
+          </button>
+          <button
+            type="button"
+            className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+// --- End Restart Modal ---
+
 
 export default function EditorTopNav({ 
     templateName, 
@@ -88,13 +132,16 @@ export default function EditorTopNav({
     activePage, 
     pages, 
     onPageChange,
-    // --- Added Undo/Redo props ---
     onUndo,
     onRedo,
     canUndo,
-    canRedo
+    canRedo,
+    onRestart // <-- NEW PROP
 }) {
   const [isPageDropdownOpen, setIsPageDropdownOpen] = useState(false);
+  
+  // --- ADDED: State for modal ---
+  const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
   
   const currentPageName = pages.find(p => p.path === activePage)?.name || 'Home';
   const siteUrl = `https://www.bizvistar.com/mysite/${templateName}`;
@@ -102,6 +149,12 @@ export default function EditorTopNav({
   const handlePageSelect = (path) => {
     onPageChange(path);
     setIsPageDropdownOpen(false);
+  };
+
+  // --- ADDED: Handler for restart ---
+  const handleRestartConfirm = () => {
+    onRestart(); // Call the function passed from EditorLayout
+    setIsRestartModalOpen(false);
   };
 
   return (
@@ -128,12 +181,15 @@ export default function EditorTopNav({
         {/* Right Side: Actions */}
         <div className="flex items-center gap-3">
           
-          {/* --- "Upgrade" Button changed to "Restart" --- */}
           <Tooltip
-            title="Restart"
-            description="Start over. This will take you back to the first step to pick a new business type."
+            title="Reset Template"
+            description="Reset all changes made to this template back to their original settings."
           >
-            <button className="flex items-center gap-2 text-sm font-medium text-gray-700 px-3 py-2 rounded-md transition-colors">
+            {/* --- UPDATED: onClick to open modal --- */}
+            <button 
+              onClick={() => setIsRestartModalOpen(true)}
+              className="flex items-center gap-2 text-sm font-medium text-gray-700 px-3 py-2 rounded-md transition-colors"
+            >
               Restart
             </button>
           </Tooltip>
@@ -142,14 +198,13 @@ export default function EditorTopNav({
           
           <Tooltip
             title="Save"
-            description="Save your changes. Your site won't be live until you publish."
+            description="Your changes are saved automatically!"
           >
-            <NavButton>
+            <NavButton className="text-gray-400">
               Save
             </NavButton>
           </Tooltip>
 
-          {/* --- Preview Button with Tooltip --- */}
           <Tooltip
             title="Preview"
             description="See what your live site will look like to visitors."
@@ -171,7 +226,6 @@ export default function EditorTopNav({
         {/* Left: Page & Devices */}
         <div className="flex items-center gap-4">
           
-          {/* --- Page Selector (No Tooltip) --- */}
           <div className="relative">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Page:</span>
@@ -183,7 +237,6 @@ export default function EditorTopNav({
                 <ChevronDown size={16} />
               </button>
             </div>
-            {/* Page Dropdown */}
             {isPageDropdownOpen && (
               <div className="absolute top-full mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10">
                 {pages.map(page => (
@@ -202,7 +255,6 @@ export default function EditorTopNav({
 
           <VerticalSeparator />
 
-          {/* Device Toggles with Tooltips */}
           <div className="flex items-center gap-2">
             <Tooltip title="Desktop View" description="See how your site looks on a computer.">
               <button
@@ -225,7 +277,7 @@ export default function EditorTopNav({
           <VerticalSeparator />
         </div>
 
-        {/* Center: URL Bar with Tooltip (Restored full size) */}
+        {/* Center: URL Bar with Tooltip */}
         <div className="flex-grow min-w-0 mx-4">
           <Tooltip
             title="Your Site Address"
@@ -238,11 +290,10 @@ export default function EditorTopNav({
           </Tooltip>
         </div>
 
-        {/* --- UPDATED: Right: Tools (Undo/Redo) with conditional Tooltips --- */}
+        {/* Right: Tools (Undo/Redo) with conditional Tooltips */}
         <div className="flex items-center gap-2 text-gray-600">
           <VerticalSeparator />
           
-          {/* Undo Button */}
           {canUndo ? (
             <Tooltip title="Undo" description="Undo your last action.">
               <button 
@@ -256,14 +307,13 @@ export default function EditorTopNav({
           ) : (
             <button 
               disabled
-              className="p-2 rounded-md text-gray-300 " // Visibly disabled but no block icon
+              className="p-2 rounded-md text-gray-300 cursor-not-allowed"
               aria-label="Undo (disabled)"
             >
               <IconUndo />
             </button>
           )}
 
-          {/* Redo Button */}
           {canRedo ? (
             <Tooltip title="Redo" description="Redo an action you undid.">
               <button 
@@ -277,7 +327,7 @@ export default function EditorTopNav({
           ) : (
              <button 
               disabled
-              className="p-2 rounded-md text-gray-300 " // Visibly disabled but no block icon
+              className="p-2 rounded-md text-gray-300 cursor-not-allowed"
               aria-label="Redo (disabled)"
             >
               <IconRedo />
@@ -285,6 +335,13 @@ export default function EditorTopNav({
           )}
         </div>
       </div>
+
+      {/* --- ADDED: Render the modal --- */}
+      <RestartConfirmationModal
+        isOpen={isRestartModalOpen}
+        onClose={() => setIsRestartModalOpen(false)}
+        onConfirm={handleRestartConfirm}
+      />
     </header>
   );
 }

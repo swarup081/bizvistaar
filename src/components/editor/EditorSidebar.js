@@ -43,27 +43,25 @@ const SectionTitle = ({ label }) => (
   </div>
 );
 
-// --- UPDATED: EditorInput ---
-// This now uses the correct placeholder logic.
+// --- UPDATED: EditorInput for "Placeholder" UI ---
 const EditorInput = ({ label, value, onChange, isRequired = false }) => {
-    const [localValue, setLocalValue] = useState(""); // Local state for typing
+    // This local state holds what the user is *currently typing*
+    const [localValue, setLocalValue] = useState("");
 
+    // When the user clicks away, update the *real* data
     const onBlur = () => {
-        // Only update if localValue is not empty.
-        // If it's empty, it means "no change".
+        // Only update if the user actually typed something
         if (localValue.trim() !== "") {
             onChange({ target: { value: localValue } });
         }
-        // Clear local value on blur
-        setLocalValue("");
-    };
-
-    const onFocus = () => {
-        // On focus, just set localValue to empty string,
-        // allowing user to type new value.
-        // The placeholder will show the current value.
+        // Clear the box after blur
         setLocalValue(""); 
     };
+    
+    // This key is CRITICAL. It forces React to reset the input
+    // (and its localValue) when the *external* value changes.
+    // This fixes issues with undo/redo and reset.
+    const key = value || ""; 
 
     return (
         <div className="mb-4">
@@ -71,36 +69,30 @@ const EditorInput = ({ label, value, onChange, isRequired = false }) => {
                 {label} {isRequired && <span className="text-red-500">*</span>}
             </label>
             <input
+                key={key} // Force re-render when data changes
                 type="text"
-                value={localValue} // Always show localValue
-                onChange={(e) => setLocalValue(e.target.value)}
-                onFocus={onFocus}
-                onBlur={onBlur}
-                placeholder={value || "Type here..."} // Show the *real* value as the placeholder
+                value={localValue} // The box shows the *local* typing state (empty)
+                onChange={(e) => setLocalValue(e.target.value)} // Update local state as user types
+                onBlur={onBlur} // Update *real* data on blur
+                placeholder={value || "Type here..."} // The *real* data is shown as placeholder
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
         </div>
     );
 };
 
-// --- UPDATED: EditorTextArea ---
-// Now uses the correct placeholder logic and removes resize handle.
+// --- UPDATED: EditorTextArea for "Placeholder" UI ---
 const EditorTextArea = ({ label, value, onChange }) => {
     const [localValue, setLocalValue] = useState("");
-
+    
     const onBlur = () => {
-        // Only update if localValue is not empty.
-        // If it's empty, it means "no change".
         if (localValue.trim() !== "") {
             onChange({ target: { value: localValue } });
         }
         setLocalValue("");
     };
-
-    const onFocus = () => {
-        // On focus, just set localValue to empty string,
-        setLocalValue("");
-    };
+    
+    const key = value || "";
 
     return (
         <div className="mb-4">
@@ -108,13 +100,13 @@ const EditorTextArea = ({ label, value, onChange }) => {
                 {label}
             </label>
             <textarea
-                value={localValue} // Always show localValue
+                key={key} // Force re-render
+                value={localValue}
                 onChange={(e) => setLocalValue(e.target.value)}
-                onFocus={onFocus}
                 onBlur={onBlur}
-                placeholder={value || ""}
+                placeholder={value || "Type here..."}
                 rows={3}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" // <-- resize-none added
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             />
         </div>
     );
@@ -280,7 +272,7 @@ export default function EditorSidebar({
   activeTab, 
   onTabChange,
   businessData,
-  setBusinessData,
+  setBusinessData, // This is handleDataUpdate from layout
   onPageChange 
 }) {
 
@@ -296,7 +288,12 @@ export default function EditorSidebar({
         for (let i = 0; i < keys.length - 1; i++) {
             const key = keys[i];
             if (current[key] === undefined || current[key] === null) {
-                current[key] = {};
+                // Check if the next key is a number, to create an array if needed
+                if (isFinite(keys[i+1])) {
+                    current[key] = [];
+                } else {
+                    current[key] = {};
+                }
             }
             current = current[key];
         }
@@ -305,6 +302,25 @@ export default function EditorSidebar({
         return newData;
     });
   };
+
+  // --- NEW: Sync handler for Business Name and Logo Text ---
+  const handleSyncedNameChange = (newValue) => {
+    setBusinessData(prev => {
+        const newData = JSON.parse(JSON.stringify(prev));
+        
+        // Sync both fields
+        newData.name = newValue;
+        newData.logoText = newValue; 
+
+        // Also update copyright string intelligently
+        if (newData.footer?.copyright) {
+            const year = new Date().getFullYear();
+            newData.footer.copyright = `© ${year} ${newValue}. All Rights Reserved`;
+        }
+        return newData;
+    });
+  };
+  // --- END: Sync handler ---
 
   const toggleAccordion = (id) => {
     const newActiveId = activeAccordion === id ? null : id;
@@ -315,24 +331,32 @@ export default function EditorSidebar({
         const homePath = homePage?.path || businessData.pages[0]?.path;
         let path = homePath;
         
-        switch (newActiveId) {
-            case 'products':
-                const shopPage = businessData.pages.find(p => p.name.toLowerCase().includes('shop'));
-                if (shopPage) path = shopPage.path;
-                break;
-            case 'about':
-                if (businessData.aboutSectionId) path = `${homePath}#${businessData.aboutSectionId}`;
-                break;
-            case 'collection':
-                 const collectionId = businessData.collectionSectionId || "collection";
-                 path = `${homePath}#${collectionId}`;
-                break;
-            case 'feature2':
-                if (businessData.feature2SectionId) path = `${homePath}#${businessData.feature2SectionId}`;
-                break;
-            case 'footer':
-                if (businessData.footerSectionId) path = `${homePath}#${businessData.footerSectionId}`;
-                break;
+        // Logic to jump to sections on the homepage
+        // This is a simplified example; you might need to make this more robust
+        // based on your data structure.
+        const sectionIdMap = {
+            'about': businessData.aboutSectionId,
+            'collection': businessData.collectionSectionId,
+            'feature2': businessData.feature2SectionId,
+            'footer': businessData.footerSectionId,
+            'products': businessData.bestSellersSectionId || businessData.collectionSectionId,
+            'hero': 'home' // Special case for hero
+        };
+
+        const sectionId = sectionIdMap[newActiveId];
+
+        if (sectionId && sectionId !== 'home') {
+            path = `${homePath}#${sectionId}`;
+        } else if (newActiveId === 'products') {
+            // If 'products' is clicked, try to find a 'shop' page
+            const shopPage = businessData.pages.find(p => p.name.toLowerCase().includes('shop'));
+            if (shopPage) {
+                path = shopPage.path;
+            } else if (sectionId) {
+                path = `${homePath}#${sectionId}`; // Fallback to homepage section
+            }
+        } else {
+            path = homePath; // Default to home
         }
         
         onPageChange(path);
@@ -350,9 +374,10 @@ export default function EditorSidebar({
   };
 
   const handleRemoveCategory = (categoryId) => {
-      const newCategories = businessData.categories.filter(c => c.id !== categoryId);
+      const newCategories = (businessData.categories || []).filter(c => c.id !== categoryId);
       handleDataChange('categories', newCategories);
-      const newProducts = businessData.allProducts.map(p => {
+      // Also update products that used this category
+      const newProducts = (businessData.allProducts || []).map(p => {
           if (p.category === categoryId) return { ...p, category: "" };
           return p;
       });
@@ -364,7 +389,7 @@ export default function EditorSidebar({
           id: Date.now(),
           name: "New Product",
           price: 9.99,
-          category: businessData.categories[0]?.id || "",
+          category: businessData.categories?.[0]?.id || "",
           image: "https://placehold.co/600x750/CCCCCC/909090?text=New+Product",
           description: "A description for your new product."
       };
@@ -373,30 +398,27 @@ export default function EditorSidebar({
   };
   
   const handleRemoveProduct = (productId) => {
-      const newProducts = businessData.allProducts.filter(p => p.id !== productId);
+      const newProducts = (businessData.allProducts || []).filter(p => p.id !== productId);
       handleDataChange('allProducts', newProducts);
-      handleDataChange('collection.itemIDs', (businessData.collection.itemIDs || []).filter(id => id !== productId));
-      handleDataChange('bestSellers.itemIDs', (businessData.bestSellers.itemIDs || []).filter(id => id !== productId));
+      // Also remove from homepage collections if it's there
+      handleDataChange('collection.itemIDs', (businessData.collection?.itemIDs || []).filter(id => id !== productId));
+      handleDataChange('bestSellers.itemIDs', (businessData.bestSellers?.itemIDs || []).filter(id => id !== productId));
   };
   
-  // --- Dynamic fields for Flara ---
-  const phonePath = 'whatsappNumber';
-  const phoneValue = businessData?.whatsappNumber || '';
-  const aboutTitlePath = 'feature1.title';
-  const aboutTitleValue = businessData?.feature1?.title || '';
-  const aboutTextPath = 'feature1.text';
-  const aboutTextValue = businessData?.feature1?.text || '';
-  const aboutImagePath = 'feature1.image';
-  const aboutImageValue = businessData?.feature1?.image || '';
-  
+  // --- Dynamic property access ---
+  // This makes the sidebar more generic and less prone to errors if a property doesn't exist
+  const getSafe = (obj, path, defaultValue = '') => {
+    return path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : defaultValue), obj);
+  }
+
   const allProducts = Array.isArray(businessData?.allProducts) ? businessData.allProducts : [];
   const allCategories = Array.isArray(businessData?.categories) ? businessData.categories : [];
   
   const productOptions = allProducts.map(p => ({ value: p.id, label: p.name }));
   const categoryOptions = allCategories.map(c => ({ value: c.id, label: c.name }));
   
-  const collectionIDs = Array.isArray(businessData?.collection?.itemIDs) ? businessData.collection.itemIDs : [];
-  const bestSellerIDs = Array.isArray(businessData?.bestSellers?.itemIDs) ? businessData.bestSellers.itemIDs : [];
+  const collectionIDs = getSafe(businessData, 'collection.itemIDs', []);
+  const bestSellerIDs = getSafe(businessData, 'bestSellers.itemIDs', []);
 
   const bestSellerOptions = productOptions.filter(
       p => !collectionIDs.includes(p.value)
@@ -416,7 +438,7 @@ export default function EditorSidebar({
         <MainTab
           icon={Palette}
           label="Theme"
-          isActive={activeTab === 'theme'} // <-- BUG FIX
+          isActive={activeTab === 'theme'}
           onClick={() => onTabChange('theme')}
         />
         <MainTab
@@ -441,37 +463,27 @@ export default function EditorSidebar({
             >
               <EditorInput
                 label="Announcement Bar"
-                value={businessData?.announcementBar || ''}
+                value={getSafe(businessData, 'announcementBar')}
                 onChange={(e) => handleDataChange('announcementBar', e.target.value)}
               />
+              {/* --- UPDATED: Business Name --- */}
               <EditorInput
                 label="Business Name"
-                value={businessData?.name || ''}
-                onChange={(e) => {
-                    const newName = e.target.value;
-                    setBusinessData(prev => {
-                        const newData = JSON.parse(JSON.stringify(prev));
-                        newData.name = newName;
-                        newData.logoText = newName;
-                        if (newData.footer?.copyright) {
-                            const year = new Date().getFullYear();
-                            newData.footer.copyright = `© ${year} ${newName}. All Rights Reserved`;
-                        }
-                        return newData;
-                    });
-                }}
+                value={getSafe(businessData, 'name')}
+                onChange={(e) => handleSyncedNameChange(e.target.value)}
                 isRequired={true}
               />
+              {/* --- UPDATED: Logo Text --- */}
               <EditorInput
                 label="Logo Text"
-                value={businessData?.logoText || ''}
-                onChange={(e) => handleDataChange('logoText', e.target.value)}
+                value={getSafe(businessData, 'logoText')}
+                onChange={(e) => handleSyncedNameChange(e.target.value)}
                 isRequired={true}
               />
               <EditorInput
                 label="Contact Phone / WhatsApp"
-                value={phoneValue}
-                onChange={(e) => handleDataChange(phonePath, e.target.value)}
+                value={getSafe(businessData, 'whatsappNumber')}
+                onChange={(e) => handleDataChange('whatsappNumber', e.target.value)}
               />
             </AccordionItem>
 
@@ -483,87 +495,92 @@ export default function EditorSidebar({
             >
               <EditorInput
                 label="Title"
-                value={businessData?.hero?.title || ''}
+                value={getSafe(businessData, 'hero.title')}
                 onChange={(e) => handleDataChange('hero.title', e.target.value)}
                 isRequired={true}
               />
               <EditorTextArea
                 label="Subtitle"
-                value={businessData?.hero?.subtitle || ''}
+                value={getSafe(businessData, 'hero.subtitle')}
                 onChange={(e) => handleDataChange('hero.subtitle', e.target.value)}
               />
               <EditorInput
                 label="Button Text"
-                value={businessData?.hero?.cta || ''}
+                value={getSafe(businessData, 'hero.cta')}
                 onChange={(e) => handleDataChange('hero.cta', e.target.value)}
               />
               <EditorImageUpload
                 label="Hero Image"
-                value={businessData?.hero?.image || ''}
+                value={getSafe(businessData, 'hero.image')}
                 onChange={(e) => handleDataChange('hero.image', e.target.value)}
               />
             </AccordionItem>
 
-            <AccordionItem
-              title="About Section"
-              icon={Home}
-              isOpen={activeAccordion === 'about'}
-              onClick={() => toggleAccordion('about')}
-            >
-              <EditorInput
-                label="Title"
-                value={aboutTitleValue}
-                onChange={(e) => handleDataChange(aboutTitlePath, e.target.value)}
-              />
-               <EditorTextArea
-                label="Text"
-                value={aboutTextValue}
-                onChange={(e) => handleDataChange(aboutTextPath, e.target.value)}
-              />
-              <EditorTextArea
-                label="Sub-text"
-                value={businessData?.feature1?.subtext || ''}
-                onChange={(e) => handleDataChange('feature1.subtext', e.target.value)}
-              />
-               <EditorImageUpload
-                label="About Image"
-                value={aboutImageValue}
-                onChange={(e) => handleDataChange(aboutImagePath, e.target.value)}
-              />
-            </AccordionItem>
+            {/* A more generic way to handle sections if they exist */}
+            {businessData?.feature1 && (
+              <AccordionItem
+                title="About Section"
+                icon={Home}
+                isOpen={activeAccordion === 'about'}
+                onClick={() => toggleAccordion('about')}
+              >
+                <EditorInput
+                  label="Title"
+                  value={getSafe(businessData, 'feature1.title')}
+                  onChange={(e) => handleDataChange('feature1.title', e.target.value)}
+                />
+                 <EditorTextArea
+                  label="Text"
+                  value={getSafe(businessData, 'feature1.text')}
+                  onChange={(e) => handleDataChange('feature1.text', e.target.value)}
+                />
+                <EditorTextArea
+                  label="Sub-text"
+                  value={getSafe(businessData, 'feature1.subtext')}
+                  onChange={(e) => handleDataChange('feature1.subtext', e.target.value)}
+                />
+                 <EditorImageUpload
+                  label="About Image"
+                  value={getSafe(businessData, 'feature1.image')}
+                  onChange={(e) => handleDataChange('feature1.image', e.target.value)}
+                />
+              </AccordionItem>
+            )}
             
-             <AccordionItem
-              title="Feature Section"
-              icon={Columns}
-              isOpen={activeAccordion === 'feature2'}
-              onClick={() => toggleAccordion('feature2')}
-            >
-              <EditorInput
-                label="Title"
-                value={businessData?.feature2?.title || ''}
-                onChange={(e) => handleDataChange('feature2.title', e.target.value)}
-              />
-               <EditorTextArea
-                label="Text"
-                value={businessData?.feature2?.text || ''}
-                onChange={(e) => handleDataChange('feature2.text', e.target.value)}
-              />
-               <EditorTextArea
-                label="Sub-text"
-                value={businessData?.feature2?.subtext || ''}
-                onChange={(e) => handleDataChange('feature2.subtext', e.target.value)}
-              />
-               <EditorImageUpload
-                label="Image 1"
-                value={businessData?.feature2?.image1 || ''}
-                onChange={(e) => handleDataChange('feature2.image1', e.target.value)}
-              />
-              <EditorImageUpload
-                label="Image 2"
-                value={businessData?.feature2?.image2 || ''}
-                onChange={(e) => handleDataChange('feature2.image2', e.target.value)}
-              />
-            </AccordionItem>
+            {businessData?.feature2 && (
+               <AccordionItem
+                title="Feature Section"
+                icon={Columns}
+                isOpen={activeAccordion === 'feature2'}
+                onClick={() => toggleAccordion('feature2')}
+              >
+                <EditorInput
+                  label="Title"
+                  value={getSafe(businessData, 'feature2.title')}
+                  onChange={(e) => handleDataChange('feature2.title', e.target.value)}
+                />
+                 <EditorTextArea
+                  label="Text"
+                  value={getSafe(businessData, 'feature2.text')}
+                  onChange={(e) => handleDataChange('feature2.text', e.target.value)}
+                />
+                 <EditorTextArea
+                  label="Sub-text"
+                  value={getSafe(businessData, 'feature2.subtext')}
+                  onChange={(e) => handleDataChange('feature2.subtext', e.target.value)}
+                />
+                 <EditorImageUpload
+                  label="Image 1"
+                  value={getSafe(businessData, 'feature2.image1')}
+                  onChange={(e) => handleDataChange('feature2.image1', e.target.value)}
+                />
+                <EditorImageUpload
+                  label="Image 2"
+                  value={getSafe(businessData, 'feature2.image2')}
+                  onChange={(e) => handleDataChange('feature2.image2', e.target.value)}
+                />
+              </AccordionItem>
+            )}
 
             <AccordionItem
               title="Products & Categories"
@@ -646,68 +663,74 @@ export default function EditorSidebar({
                 </button>
             </AccordionItem>
             
-            <AccordionItem
-              title="Home Page Collections"
-              icon={LayoutDashboard}
-              isOpen={activeAccordion === 'collection'}
-              onClick={() => toggleAccordion('collection')}
-            >
-                {/* --- COLLECTION MANAGER --- */}
-                <h4 className="text-base font-semibold text-gray-800 mb-2">"Our Collection" Section</h4>
-                <p className="text-xs text-gray-500 mb-3">Select the products to show on the homepage.</p>
-                {collectionIDs.map((id, index) => (
-                    <EditorSelect
-                        key={index}
-                        label={`Collection Slot ${index + 1}`}
-                        value={id}
-                        onChange={(e) => handleDataChange(`collection.itemIDs.${index}`, Number(e.target.value))}
-                        options={productOptions} // Can select any product
-                        placeholder="Select a product"
-                    />
-                ))}
-                
-                {/* --- BEST SELLER MANAGER --- */}
-                <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">"Best Sellers" Section</h4>
-                <p className="text-xs text-gray-500 mb-3">Select the products to show on the homepage.</p>
-                {bestSellerIDs.map((id, index) => (
-                    <EditorSelect
-                        key={index}
-                        label={`Best Seller Slot ${index + 1}`}
-                        value={id}
-                        onChange={(e) => handleDataChange(`bestSellers.itemIDs.${index}`, Number(e.target.value))}
-                        options={bestSellerOptions} // <-- USES THE FILTERED LIST
-                        placeholder="Select a product"
-                    />
-                ))}
-            </AccordionItem>
+            {businessData?.collection && (
+              <AccordionItem
+                title="Home Page Collections"
+                icon={LayoutDashboard}
+                isOpen={activeAccordion === 'collection'}
+                onClick={() => toggleAccordion('collection')}
+              >
+                  <h4 className="text-base font-semibold text-gray-800 mb-2">"Our Collection" Section</h4>
+                  <p className="text-xs text-gray-500 mb-3">Select the products to show on the homepage.</p>
+                  {collectionIDs.map((id, index) => (
+                      <EditorSelect
+                          key={index}
+                          label={`Collection Slot ${index + 1}`}
+                          value={id}
+                          onChange={(e) => handleDataChange(`collection.itemIDs.${index}`, Number(e.target.value))}
+                          options={productOptions} // Can select any product
+                          placeholder="Select a product"
+                      />
+                  ))}
+                  
+                  {businessData?.bestSellers && (
+                    <>
+                      <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">"Best Sellers" Section</h4>
+                      <p className="text-xs text-gray-500 mb-3">Select the products to show on the homepage.</p>
+                      {bestSellerIDs.map((id, index) => (
+                          <EditorSelect
+                              key={index}
+                              label={`Best Seller Slot ${index + 1}`}
+                              value={id}
+                              onChange={(e) => handleDataChange(`bestSellers.itemIDs.${index}`, Number(e.target.value))}
+                              options={bestSellerOptions} // <-- USES THE FILTERED LIST
+                              placeholder="Select a product"
+                          />
+                      ))}
+                    </>
+                  )}
+              </AccordionItem>
+            )}
             
-            <AccordionItem
-              title="Footer Links"
-              icon={FileText}
-              isOpen={activeAccordion === 'footer'}
-              onClick={() => toggleAccordion('footer')}
-            >
-                <h4 className="text-base font-semibold text-gray-800 mb-2">"About" Links</h4>
-                <EditorInput
-                    label="Link 1 Title"
-                    value={businessData?.footer?.links?.about[0]?.name || ''}
-                    onChange={(e) => handleDataChange('footer.links.about.0.name', e.target.value)}
-                />
-                
-                <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">"Categories" Links</h4>
-                <EditorInput
-                    label="Link 1 Title"
-                    value={businessData?.footer?.links?.categories[0]?.name || ''}
-                    onChange={(e) => handleDataChange('footer.links.categories.0.name', e.target.value)}
-                />
+            {businessData?.footer?.links && (
+              <AccordionItem
+                title="Footer Links"
+                icon={FileText}
+                isOpen={activeAccordion === 'footer'}
+                onClick={() => toggleAccordion('footer')}
+              >
+                  <h4 className="text-base font-semibold text-gray-800 mb-2">"About" Links</h4>
+                  <EditorInput
+                      label="Link 1 Title"
+                      value={getSafe(businessData, 'footer.links.about.0.name')}
+                      onChange={(e) => handleDataChange('footer.links.about.0.name', e.target.value)}
+                  />
+                  
+                  <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">"Categories" Links</h4>
+                  <EditorInput
+                      label="Link 1 Title"
+                      value={getSafe(businessData, 'footer.links.categories.0.name')}
+                      onChange={(e) => handleDataChange('footer.links.categories.0.name', e.target.value)}
+                  />
 
-                <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">"Get Help" Links</h4>
-                <EditorInput
-                    label="Link 1 Title"
-                    value={businessData?.footer?.links?.getHelp[0]?.name || ''}
-                    onChange={(e) => handleDataChange('footer.links.getHelp.0.name', e.target.value)}
-                />
-            </AccordionItem>
+                  <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">"Get Help" Links</h4>
+                  <EditorInput
+                      label="Link 1 Title"
+                      value={getSafe(businessData, 'footer.links.getHelp.0.name')}
+                      onChange={(e) => handleDataChange('footer.links.getHelp.0.name', e.target.value)}
+                  />
+              </AccordionItem>
+            )}
 
           </section>
         )}

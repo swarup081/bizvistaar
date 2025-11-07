@@ -21,38 +21,66 @@ const templateDataMap = {
 export default function EditorLayout({ templateName }) {
   const [view, setView] = useState('desktop');
   const [activeTab, setActiveTab] = useState('website');
-  
   const iframeRef = useRef(null);
-  
-  const initialData = useMemo(() => {
-    // Deep copy the initial data to prevent mutation
+
+  // --- NEW: Local Storage Key ---
+  const editorDataKey = `editorData_${templateName}`;
+  const cartDataKey = `${templateName}Cart`; // e.g., 'blisslyCart'
+
+  // Get the default data, deep-copied
+  const defaultData = useMemo(() => {
     return JSON.parse(JSON.stringify(templateDataMap[templateName] || {}));
   }, [templateName]);
 
-  // --- START: Undo/Redo State Management ---
-  const [businessData, setBusinessData] = useState(initialData);
-  const [history, setHistory] = useState([initialData]);
+  // --- FIX: Always initialize with defaultData to prevent hydration mismatch ---
+  const [businessData, setBusinessData] = useState(defaultData);
+  const [history, setHistory] = useState([defaultData]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
-  // This function replaces the simple setBusinessData
-  // It updates the state AND manages the history stack
+  // --- NEW: Load from localStorage *after* mount to prevent mismatch ---
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem(editorDataKey);
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        // Set this as the *current* state and *history base*
+        setBusinessData(parsedData); 
+        setHistory([parsedData]);
+        setHistoryIndex(0);
+      } else {
+        // If no saved data, ensure we are on default (for template switching)
+        setBusinessData(defaultData);
+        setHistory([defaultData]);
+        setHistoryIndex(0);
+      }
+    } catch (error) {
+      console.error("Failed to load saved data:", error);
+      setBusinessData(defaultData);
+      setHistory([defaultData]);
+      setHistoryIndex(0);
+    }
+  }, [templateName, defaultData, editorDataKey]); // Rerun if template changes
+
+  // Save any change to businessData to localStorage
+  useEffect(() => {
+    try {
+      const dataToSave = JSON.stringify(businessData);
+      localStorage.setItem(editorDataKey, dataToSave);
+    } catch (error) {
+      console.error("Failed to save data to localStorage:", error);
+    }
+  }, [businessData, editorDataKey]);
+
+  
   const handleDataUpdate = (updaterFn) => {
     setBusinessData(prevData => {
-      // Get the new state, whether it's from a value or a function
       const newData = typeof updaterFn === 'function' ? updaterFn(prevData) : updaterFn;
-
-      // If the new data is the same as the current data, do nothing
-      // This prevents duplicate history entries
       if (JSON.stringify(newData) === JSON.stringify(prevData)) {
         return prevData;
       }
-
-      // Clear the "redo" history by slicing
       const newHistory = [...history.slice(0, historyIndex + 1), newData];
-      
       setHistory(newHistory);
       setHistoryIndex(newHistory.length - 1);
-      
       return newData;
     });
   };
@@ -62,7 +90,6 @@ export default function EditorLayout({ templateName }) {
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
       setBusinessData(history[newIndex]);
-      // The useEffect below will send this to the iframe
     }
   };
 
@@ -71,25 +98,26 @@ export default function EditorLayout({ templateName }) {
       const newIndex = historyIndex + 1;
       setHistoryIndex(newIndex);
       setBusinessData(history[newIndex]);
-      // The useEffect below will send this to the iframe
     }
   };
-  // --- END: Undo/Redo State Management ---
 
-
-  // 1. Load initial data when templateName changes
-  useEffect(() => {
-    const data = JSON.parse(JSON.stringify(templateDataMap[templateName] || {}));
-    if (data) {
-      // Reset all state when template changes
-      setBusinessData(data);
-      setHistory([data]);
-      setHistoryIndex(0);
-      const homePage = data.pages?.[0]?.path || `/templates/${templateName}`;
-      setActivePage(homePage);
-      setPreviewUrl(homePage);
-    }
-  }, [templateName]);
+  const handleRestart = () => {
+    // 1. Clear only the editor and cart data for this template
+    localStorage.removeItem(editorDataKey);
+    localStorage.removeItem(cartDataKey);
+    
+    // 2. Reset all editor state to the *default* data
+    setBusinessData(defaultData);
+    setHistory([defaultData]);
+    setHistoryIndex(0);
+    
+    // 3. Force-send the fresh default data to the iframe
+    sendDataToIframe(defaultData);
+    
+    // 4. Reset the iframe's page to the template's home page
+    const homePage = defaultData.pages?.[0]?.path || `/templates/${templateName}`;
+    handlePageChange(homePage);
+  };
 
   // 2. Send data to iframe
   const sendDataToIframe = (data) => {
@@ -108,13 +136,13 @@ export default function EditorLayout({ templateName }) {
     }, 250); // 250ms debounce
 
     return () => clearTimeout(handler);
-  }, [businessData]); // This now triggers on direct set, undo, and redo
+  }, [businessData]); // This triggers on user edit, undo, and redo
 
   // 4. Handle messages from the iframe
   useEffect(() => {
     const handleMessage = (event) => {
       if (event.data.type === 'IFRAME_READY') {
-        sendDataToIframe(businessData); // Send initial data
+        sendDataToIframe(businessData); // Send current (potentially saved) data
       }
     };
     window.addEventListener('message', handleMessage);
@@ -122,19 +150,32 @@ export default function EditorLayout({ templateName }) {
   }, [businessData]); // Pass businessData to ensure sendDataToIframe has the latest state
 
   // 5. Handle page change request from TopNav OR Sidebar
-  const [activePage, setActivePage] = useState(initialData?.pages?.[0]?.path || `/templates/${templateName}`);
-  const [previewUrl, setPreviewUrl] = useState(initialData?.pages?.[0]?.path || `/templates/${templateName}`);
+  const [activePage, setActivePage] = useState(defaultData?.pages?.[0]?.path || `/templates/${templateName}`);
+  const [previewUrl, setPreviewUrl] = useState(defaultData?.pages?.[0]?.path || `/templates/${templateName}`);
   
   const handlePageChange = (path) => {
     if (!path) return; // Do nothing if path is invalid
     setActivePage(path); // Update active state
     if (iframeRef.current) {
-      iframeRef.current.contentWindow.postMessage({
-        type: 'CHANGE_PAGE',
-        payload: { path }
-      }, '*');
+      if (iframeRef.current.src.includes(path.split('#')[0])) {
+        // If iframe is already on this page (e.g., an anchor link #), just post the message
+        iframeRef.current.contentWindow.postMessage({
+          type: 'CHANGE_PAGE',
+          payload: { path }
+        }, '*');
+      } else {
+        // If it's a new page, update the src
+        setPreviewUrl(path);
+      }
     }
   };
+  
+  // This effect is necessary to reset the preview URL when the template changes
+  useEffect(() => {
+      const homePage = defaultData.pages?.[0]?.path || `/templates/${templateName}`;
+      setActivePage(homePage);
+      setPreviewUrl(homePage);
+  }, [templateName, defaultData]);
 
   return (
     <div className="grid grid-cols-[1fr_auto] h-screen bg-gray-50">
@@ -149,13 +190,13 @@ export default function EditorLayout({ templateName }) {
             view={view}
             onViewChange={setView}
             activePage={activePage}
-            pages={businessData?.pages || []} // Pass pages to TopNav
-            onPageChange={handlePageChange} // Pass page change handler
-            // --- Pass Undo/Redo props ---
+            pages={businessData?.pages || []}
+            onPageChange={handlePageChange}
             onUndo={handleUndo}
             onRedo={handleRedo}
             canUndo={historyIndex > 0}
             canRedo={historyIndex < history.length - 1}
+            onRestart={handleRestart}
           />
         </div>
 
