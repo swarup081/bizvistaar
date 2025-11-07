@@ -114,51 +114,49 @@ export default function EditorTopNav({
             BizVistar
           </div>
           <div className="flex items-center gap-2">
-            <NavButton>Hire a Professional</NavButton>
+            <Tooltip
+              title="Hire a Professional"
+              description="Need help with design or content? Our experts are here to assist."
+            >
+              <NavButton>Hire a Professional</NavButton>
+            </Tooltip>
+            {/* "Help" button with no Tooltip */}
             <NavButton>Help</NavButton>
           </div>
         </div>
 
         {/* Right Side: Actions */}
         <div className="flex items-center gap-3">
-          {/* --- Upgrade Button with Tooltip --- */}
+          
+          {/* --- "Upgrade" Button changed to "Restart" --- */}
           <Tooltip
-            content={
-              <div className="flex items-start gap-4">
-                <div className="flex-grow">
-                  <h3 className="font-semibold text-gray-900 text-base mb-2">Upgrade to Premium and Get More!</h3>
-                  <ul className="space-y-1.5 text-sm text-gray-700">
-                    <li className="flex items-center gap-2"><CheckCircle size={16} className="text-purple-600 flex-shrink-0" /> Get a FREE domain to connect to your site</li>
-                    <li className="flex items-center gap-2"><CheckCircle size={16} className="text-purple-600 flex-shrink-0" /> Remove BizVistar ads</li>
-                    <li className="flex items-center gap-2"><CheckCircle size={16} className="text-purple-600 flex-shrink-0" /> Connect Google Analytics</li>
-                  </ul>
-                  <p className="text-xs text-gray-500 mt-4">To upgrade, start by saving your site</p>
-                  <button className="mt-2 w-full bg-purple-100 text-purple-700 font-medium py-2 rounded-md text-sm hover:bg-purple-200">Save Site</button>
-                </div>
-                <div className="flex-shrink-0 bg-blue-100 text-blue-600 p-3 rounded-lg">
-                  <Rocket size={32} />
-                </div>
-              </div>
-            }
+            title="Restart"
+            description="Start over. This will take you back to the first step to pick a new business type."
           >
-            <button className="text-sm font-medium text-purple-600 px-3 py-2 rounded-md">
-              Upgrade
+            <button className="flex items-center gap-2 text-sm font-medium text-gray-700 px-3 py-2 rounded-md transition-colors">
+              Restart
             </button>
           </Tooltip>
 
           <div className="w-px h-5 bg-gray-300"></div> 
-          <NavButton>
-            Save
-          </NavButton>
+          
+          <Tooltip
+            title="Save"
+            description="Save your changes. Your site won't be live until you publish."
+          >
+            <NavButton>
+              Save
+            </NavButton>
+          </Tooltip>
 
           {/* --- Preview Button with Tooltip --- */}
           <Tooltip
             title="Preview"
-            description="See what your site looks like on desktop and mobile before you go live."
+            description="See what your live site will look like to visitors."
           >
-            <button className="text-sm font-medium text-blue-500 px-3 py-2 rounded-md">
+            <NavButton className="text-blue-500">
               Preview
-            </button>
+            </NavButton>
           </Tooltip>
           
           <button className="flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-6 py-2 rounded-4xl hover:bg-blue-700 transition-colors">
@@ -173,88 +171,118 @@ export default function EditorTopNav({
         {/* Left: Page & Devices */}
         <div className="flex items-center gap-4">
           
-          {/* --- Page Selector with Tooltip --- */}
-          <Tooltip
-            title="Switch page"
-            description="See all the pages on your site and switch between them."
-          >
-            <div className="relative">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Page:</span>
-                <button 
-                  onClick={() => setIsPageDropdownOpen(prev => !prev)}
-                  className="flex items-center gap-1 font-medium text-gray-900"
-                >
-                  {currentPageName}
-                  <ChevronDown size={16} />
-                </button>
+          {/* --- Page Selector (No Tooltip) --- */}
+          <div className="relative">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Page:</span>
+              <button 
+                onClick={() => setIsPageDropdownOpen(prev => !prev)}
+                className="flex items-center gap-1 font-medium text-gray-900"
+              >
+                {currentPageName}
+                <ChevronDown size={16} />
+              </button>
+            </div>
+            {/* Page Dropdown */}
+            {isPageDropdownOpen && (
+              <div className="absolute top-full mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                {pages.map(page => (
+                  <button
+                    key={page.path}
+                    onClick={() => handlePageSelect(page.path)}
+                    className={`w-full text-left px-3 py-2 text-sm ${activePage === page.path ? 'bg-blue-50 text-blue-600' : 'text-gray-700'} hover:bg-gray-100`}
+                  >
+                    {page.name}
+                  </button>
+                ))}
               </div>
-              {/* Page Dropdown */}
-              {isPageDropdownOpen && (
-                <div className="absolute top-full mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                  {pages.map(page => (
-                    <button
-                      key={page.path}
-                      onClick={() => handlePageSelect(page.path)}
-                      className={`w-full text-left px-3 py-2 text-sm ${activePage === page.path ? 'bg-blue-50 text-blue-600' : 'text-gray-700'} hover:bg-gray-100`}
-                    >
-                      {page.name}
-                    </button>
-                  ))}
-                </div>
-              )}
+            )}
+          </div>
+
+
+          <VerticalSeparator />
+
+          {/* Device Toggles with Tooltips */}
+          <div className="flex items-center gap-2">
+            <Tooltip title="Desktop View" description="See how your site looks on a computer.">
+              <button
+                onClick={() => onViewChange('desktop')}
+                className={`p-2 rounded-md ${view === 'desktop' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 '}`}
+              >
+                <Monitor size={20} />
+              </button>
+            </Tooltip>
+            <Tooltip title="Mobile View" description="See how your site looks on a phone.">
+              <button
+                onClick={() => onViewChange('mobile')}
+                className={`p-2 rounded-md ${view === 'mobile' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 '}`}
+              >
+                <Smartphone size={20} />
+              </button>
+            </Tooltip>
+          </div>
+
+          <VerticalSeparator />
+        </div>
+
+        {/* Center: URL Bar with Tooltip (Restored full size) */}
+        <div className="flex-grow min-w-0 mx-4">
+          <Tooltip
+            title="Your Site Address"
+            description="This is your temporary website URL. Click 'Connect Your Domain' to use a custom address."
+          >
+            <div className="bg-gray-50 border border-gray-300 rounded-4xl px-3 py-2 text-sm text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer">
+              {siteUrl}
+              <span className="text-purple-600 ml-2 font-medium">Connect Your Domain</span>
             </div>
           </Tooltip>
-
-
-          <VerticalSeparator />
-
-          {/* Device Toggles */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onViewChange('desktop')}
-              className={`p-2 rounded-md ${view === 'desktop' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 '}`}
-            >
-              <Monitor size={20} />
-            </button>
-            <button
-              onClick={() => onViewChange('mobile')}
-              className={`p-2 rounded-md ${view === 'mobile' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 '}`}
-            >
-              <Smartphone size={20} />
-            </button>
-          </div>
-
-          <VerticalSeparator />
         </div>
 
-        {/* Center: URL Bar */}
-        <div className="flex-grow min-w-0 mx-4">
-          <div className="bg-gray-50 border border-gray-300 rounded-4xl px-3 py-2 text-sm text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap">
-            {siteUrl}
-            <span className="text-purple-600 ml-2 font-medium">Connect Your Domain</span>
-          </div>
-        </div>
-
-        {/* --- UPDATED: Right: Tools (Undo/Redo) --- */}
+        {/* --- UPDATED: Right: Tools (Undo/Redo) with conditional Tooltips --- */}
         <div className="flex items-center gap-2 text-gray-600">
           <VerticalSeparator />
-          <button 
-            onClick={onUndo}
-            disabled={!canUndo}
-            className="p-2 rounded-md text-gray-500 disabled:text-gray-300 disabled:cursor-not-allowed"
-            aria-label="Undo"
-          >
-            <IconUndo />
-          </button>
-          <button 
-            onClick={onRedo}
-            disabled={!canRedo}
-            className="p-2 rounded-md text-gray-500 disabled:text-gray-300 disabled:cursor-not-allowed"
-            aria-label="Redo"
-          >
-            <IconRedo />
-          </button>
+          
+          {/* Undo Button */}
+          {canUndo ? (
+            <Tooltip title="Undo" description="Undo your last action.">
+              <button 
+                onClick={onUndo}
+                className="p-2 rounded-md text-gray-500"
+                aria-label="Undo"
+              >
+                <IconUndo />
+              </button>
+            </Tooltip>
+          ) : (
+            <button 
+              disabled
+              className="p-2 rounded-md text-gray-300 " // Visibly disabled but no block icon
+              aria-label="Undo (disabled)"
+            >
+              <IconUndo />
+            </button>
+          )}
+
+          {/* Redo Button */}
+          {canRedo ? (
+            <Tooltip title="Redo" description="Redo an action you undid.">
+              <button 
+                onClick={onRedo}
+                className="p-2 rounded-md text-gray-500"
+                aria-label="Redo"
+              >
+                <IconRedo />
+              </button>
+            </Tooltip>
+          ) : (
+             <button 
+              disabled
+              className="p-2 rounded-md text-gray-300 " // Visibly disabled but no block icon
+              aria-label="Redo (disabled)"
+            >
+              <IconRedo />
+            </button>
+          )}
         </div>
       </div>
     </header>
