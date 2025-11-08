@@ -22,33 +22,31 @@ export default function EditorLayout({ templateName }) {
   const [view, setView] = useState('desktop');
   const [activeTab, setActiveTab] = useState('website');
   const iframeRef = useRef(null);
+  
+  // --- STATE LIFTED UP ---
+  const [activeAccordion, setActiveAccordion] = useState('global'); 
+  // --- END OF CHANGE ---
 
-  // --- NEW: Local Storage Key ---
   const editorDataKey = `editorData_${templateName}`;
-  const cartDataKey = `${templateName}Cart`; // e.g., 'blisslyCart'
+  const cartDataKey = `${templateName}Cart`; 
 
-  // Get the default data, deep-copied
   const defaultData = useMemo(() => {
     return JSON.parse(JSON.stringify(templateDataMap[templateName] || {}));
   }, [templateName]);
 
-  // --- FIX: Always initialize with defaultData to prevent hydration mismatch ---
   const [businessData, setBusinessData] = useState(defaultData);
   const [history, setHistory] = useState([defaultData]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
-  // --- NEW: Load from localStorage *after* mount to prevent mismatch ---
   useEffect(() => {
     try {
       const savedData = localStorage.getItem(editorDataKey);
       if (savedData) {
         const parsedData = JSON.parse(savedData);
-        // Set this as the *current* state and *history base*
         setBusinessData(parsedData); 
         setHistory([parsedData]);
         setHistoryIndex(0);
       } else {
-        // If no saved data, ensure we are on default (for template switching)
         setBusinessData(defaultData);
         setHistory([defaultData]);
         setHistoryIndex(0);
@@ -59,9 +57,8 @@ export default function EditorLayout({ templateName }) {
       setHistory([defaultData]);
       setHistoryIndex(0);
     }
-  }, [templateName, defaultData, editorDataKey]); // Rerun if template changes
+  }, [templateName, defaultData, editorDataKey]); 
 
-  // Save any change to businessData to localStorage
   useEffect(() => {
     try {
       const dataToSave = JSON.stringify(businessData);
@@ -102,24 +99,16 @@ export default function EditorLayout({ templateName }) {
   };
 
   const handleRestart = () => {
-    // 1. Clear only the editor and cart data for this template
     localStorage.removeItem(editorDataKey);
     localStorage.removeItem(cartDataKey);
-    
-    // 2. Reset all editor state to the *default* data
     setBusinessData(defaultData);
     setHistory([defaultData]);
     setHistoryIndex(0);
-    
-    // 3. Force-send the fresh default data to the iframe
     sendDataToIframe(defaultData);
-    
-    // 4. Reset the iframe's page to the template's home page
     const homePage = defaultData.pages?.[0]?.path || `/templates/${templateName}`;
     handlePageChange(homePage);
   };
 
-  // 2. Send data to iframe
   const sendDataToIframe = (data) => {
     if (iframeRef.current && data) {
       iframeRef.current.contentWindow.postMessage({
@@ -129,71 +118,103 @@ export default function EditorLayout({ templateName }) {
     }
   };
 
-  // 3. Post updated data whenever businessData state changes (debounced)
   useEffect(() => {
     const handler = setTimeout(() => {
       sendDataToIframe(businessData);
-    }, 250); // 250ms debounce
+    }, 250); 
 
     return () => clearTimeout(handler);
-  }, [businessData]); // This triggers on user edit, undo, and redo
+  }, [businessData]); 
 
-  // 4. Handle messages from the iframe
   useEffect(() => {
     const handleMessage = (event) => {
       if (event.data.type === 'IFRAME_READY') {
-        sendDataToIframe(businessData); // Send current (potentially saved) data
+        sendDataToIframe(businessData);
+      }
+      
+      if (event.data.type === 'FOCUS_SECTION') {
+        setActiveTab('website');
+        setActiveAccordion(event.data.payload.accordionId);
       }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [businessData]); // Pass businessData to ensure sendDataToIframe has the latest state
+  }, [businessData]); 
 
-  // 5. Handle page change request from TopNav OR Sidebar
   const [activePage, setActivePage] = useState(defaultData?.pages?.[0]?.path || `/templates/${templateName}`);
   const [previewUrl, setPreviewUrl] = useState(defaultData?.pages?.[0]?.path || `/templates/${templateName}`);
   
-  // --- BUG FIX IS HERE ---
   const handlePageChange = (path) => {
-    if (!path) return; // Do nothing if path is invalid
+    if (!path) return; 
     
     const [basePath, anchorId] = path.split('#');
-    setActivePage(path); // Update active state (e.g., /templates/flara#about)
+    setActivePage(path); 
 
     if (iframeRef.current) {
-      // Get the iframe's current base path (ignoring any existing anchor)
       const currentBasePath = iframeRef.current.src.split('#')[0];
 
-      // Check if the iframe's src *ends with* the new base path.
-      // This is safer than .includes()
       if (currentBasePath.endsWith(basePath) && anchorId) {
-        // We are already on the right page (e.g., /templates/flara),
-        // and we just want to scroll to an anchor.
-        // Send a direct scroll command instead of relying on router.push().
         iframeRef.current.contentWindow.postMessage({
           type: 'SCROLL_TO_SECTION',
           payload: { sectionId: anchorId }
         }, '*');
       } else if (!currentBasePath.endsWith(basePath)) {
-        // We are on a different page (e.g., /templates/flara/shop)
-        // and need to navigate back to the home page (or another page).
-        // Reload the iframe to the new path (which includes the anchor).
         setPreviewUrl(path);
       } else if (currentBasePath.endsWith(basePath) && !anchorId) {
-        // This handles clicking "Home" from the top nav when already on an anchor
-        // It reloads the page without the anchor
         setPreviewUrl(basePath);
       }
     }
   };
-  // --- END OF BUG FIX ---
   
-  // This effect is necessary to reset the preview URL when the template changes
   useEffect(() => {
       const homePage = defaultData.pages?.[0]?.path || `/templates/${templateName}`;
       setActivePage(homePage);
       setPreviewUrl(homePage);
   }, [templateName, defaultData]);
+
+  const handleAccordionToggle = (id) => {
+    const newActiveId = activeAccordion === id ? null : id;
+    setActiveAccordion(newActiveId);
+
+    if (newActiveId) {
+      if (newActiveId === 'products') {
+        const shopPage = businessData.pages.find(
+          (p) => p.name.toLowerCase() === 'shop'
+        );
+        if (shopPage) {
+          handlePageChange(shopPage.path);
+        }
+      } else {
+        const sectionIdMap = {
+          hero: 'home',
+          global: 'home',
+          about: businessData.aboutSectionId || 'about',
+          events: businessData.eventsSectionId || 'events',
+          menu: businessData.menuSectionId || 'menu',
+          testimonials: businessData.testimonialsSectionId || 'testimonials',
+          collection: businessData.collectionSectionId || 'collection',
+          feature2: businessData.feature2SectionId || 'feature2',
+          footer: businessData.footerSectionId || 'contact',
+          cta: businessData.ctaSectionId || 'cta',
+          stats: businessData.statsSectionId || 'stats',
+          blog: businessData.blogSectionId || 'blog',
+          reviews: businessData.reviewsSectionId || 'reviews',
+          specialty: businessData.specialtySectionId || 'specialty',
+        };
+        const sectionId = sectionIdMap[id] || (id !== 'products' ? id : null);
+        
+        if (sectionId) {
+          const homePage = businessData.pages.find(p => p.name.toLowerCase() === 'home');
+          const homePath = homePage?.path || businessData.pages[0]?.path;
+          
+          // --- THIS IS THE RUNTIME ERROR FIX ---
+          // It now calls handlePageChange (defined above) instead of onPageChange
+          handlePageChange(sectionId === 'home' ? homePath : `${homePath}#${sectionId}`);
+          // --- END OF FIX ---
+        }
+      }
+    }
+  };
 
   return (
     <div className="grid grid-cols-[1fr_auto] h-screen bg-gray-50">
@@ -201,7 +222,6 @@ export default function EditorLayout({ templateName }) {
       {/* Column 1: Main Content (Nav + Preview) */}
       <div className="flex flex-col h-screen overflow-hidden">
         
-        {/* Top Nav: Stays at the top of this column */}
         <div className="flex-shrink-0">
           <EditorTopNav
             templateName={templateName}
@@ -218,7 +238,6 @@ export default function EditorLayout({ templateName }) {
           />
         </div>
 
-        {/* Main Preview Area */}
         <main className="flex-grow flex items-center justify-center overflow-auto ">
           <div
             className={`transition-all duration-300 ease-in-out bg-white shadow-lg rounded-xl overflow-hidden flex-shrink-0`}
@@ -232,7 +251,7 @@ export default function EditorLayout({ templateName }) {
               src={previewUrl}
               title="Website Preview"
               className="w-full h-full border-0"
-              key={templateName} // Add key to force re-render on template change
+              key={templateName} 
             />
           </div>
         </main>
@@ -244,8 +263,11 @@ export default function EditorLayout({ templateName }) {
           activeTab={activeTab} 
           onTabChange={setActiveTab} 
           businessData={businessData}
-          setBusinessData={handleDataUpdate} // <-- Pass the history-aware updater
+          setBusinessData={handleDataUpdate} 
           onPageChange={handlePageChange}
+          
+          activeAccordion={activeAccordion}
+          onAccordionToggle={handleAccordionToggle} 
         />
       </div>
     </div>

@@ -5,6 +5,7 @@ import { businessData as initialBusinessData } from './data.js';
 import { Header, Footer } from './components.js';
 import { CartProvider, useCart } from './cartContext.js';
 import { TemplateContext } from './templateContext.js'; // Import the new context
+import { Editable } from '@/components/editor/Editable'; // --- IMPORT EDITABLE ---
 
 // Inner component to access cart context
 function FlavorNestLayout({ children }) {
@@ -40,14 +41,12 @@ function FlavorNestLayout({ children }) {
                 if (event.data.type === 'UPDATE_DATA') {
                     setBusinessData(event.data.payload);
                 }
-                // --- BUG FIX: ADDED SCROLL HANDLER ---
                 if (event.data.type === 'SCROLL_TO_SECTION') {
                     const element = document.getElementById(event.data.payload.sectionId);
                     if (element) {
                         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
                 }
-                // --- This handles page changes from the TopNav dropdown ---
                 if (event.data.type === 'CHANGE_PAGE') {
                     router.push(event.data.payload.path);
                 }
@@ -106,7 +105,11 @@ function FlavorNestLayout({ children }) {
                     {children}
                 </main>
                 
-                <Footer />
+                {/* --- WRAP FOOTER WITH EDITABLE --- */}
+                <Editable focusId="footer">
+                    <Footer />
+                </Editable>
+                {/* --- END OF WRAP --- */}
 
                 {/* Cart Modal... */}
                 {isCartOpen && (

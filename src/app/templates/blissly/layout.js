@@ -5,6 +5,7 @@ import { businessData as initialBusinessData } from './data.js';
 import { Header, Footer, CartIcon } from './components.js';
 import { CartProvider, useCart } from './cartContext.js';
 import { TemplateContext } from './templateContext.js'; // Import the new context
+import { Editable } from '@/components/editor/Editable'; // --- IMPORT EDITABLE ---
 
 // Inner component to access cart context
 function CartLayout({ children }) {
@@ -98,9 +99,6 @@ function CartLayout({ children }) {
     const themeClassName = `theme-${businessData.theme.colorPalette}`;
     
     return (
-        // --- THIS IS THE FIX ---
-        // The provider now correctly wraps the content and uses the
-        // businessData state from this component.
         <TemplateContext.Provider value={{ businessData, setBusinessData }}>
             <div 
               className={`antialiased bg-brand-bg text-brand-text ${themeClassName} font-sans`}
@@ -120,8 +118,11 @@ function CartLayout({ children }) {
                     {children}
                 </main>
                 
-                {/* Footer will now get data from context */}
-                <Footer /> 
+                {/* --- WRAP FOOTER WITH EDITABLE --- */}
+                <Editable focusId="footer">
+                    <Footer /> 
+                </Editable>
+                {/* --- END OF WRAP --- */}
 
                 {/* --- Cart Modal (Blissly Style) --- */}
                 {isCartOpen && (

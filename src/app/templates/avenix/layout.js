@@ -5,6 +5,7 @@ import { businessData as initialBusinessData } from './data.js';
 import { Header, Footer } from './components.js';
 import { CartProvider, useCart } from './cartContext.js';
 import { TemplateContext } from './templateContext.js'; // Import the new context
+import { Editable } from '@/components/editor/Editable'; // --- IMPORT EDITABLE ---
 
 // Inner component to access cart context
 function CartLayout({ children }) {
@@ -40,7 +41,6 @@ function CartLayout({ children }) {
                 if (event.data.type === 'UPDATE_DATA') {
                     setBusinessData(event.data.payload);
                 }
-                // --- THIS IS THE FIX ---
                 if (event.data.type === 'SCROLL_TO_SECTION') {
                     const element = document.getElementById(event.data.payload.sectionId);
                     if (element) {
@@ -50,7 +50,6 @@ function CartLayout({ children }) {
                 if (event.data.type === 'CHANGE_PAGE') {
                     router.push(event.data.payload.path);
                 }
-                // --- END OF FIX ---
             };
             window.addEventListener('message', handleMessage);
             window.parent.postMessage({ type: 'IFRAME_READY' }, '*');
@@ -86,8 +85,6 @@ function CartLayout({ children }) {
     const themeClassName = `theme-${businessData.theme.colorPalette}`;
     
     return (
-        // --- THIS IS THE FIX ---
-        // The provider now correctly wraps the layout
         <TemplateContext.Provider value={{ businessData, setBusinessData }}>
             <div 
               className={`antialiased bg-brand-bg text-brand-text ${themeClassName} font-sans`}
@@ -103,8 +100,11 @@ function CartLayout({ children }) {
                     {children}
                 </main>
                 
-                {/* Footer will now get data from context */}
-                <Footer />
+                {/* --- WRAP FOOTER WITH EDITABLE --- */}
+                <Editable focusId="footer">
+                    <Footer />
+                </Editable>
+                {/* --- END OF WRAP --- */}
 
                 {/* Cart Modal... */}
                 {isCartOpen && (

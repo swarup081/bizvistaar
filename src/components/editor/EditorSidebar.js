@@ -387,8 +387,10 @@ export default function EditorSidebar({
   businessData,
   setBusinessData, // This is handleDataUpdate from layout
   onPageChange,
+  // --- ACCEPT NEW PROPS ---
+  activeAccordion,
+  onAccordionToggle
 }) {
-  const [activeAccordion, setActiveAccordion] = useState('global');
   const [newCategoryName, setNewCategoryName] = useState('');
 
   const handleDataChange = (path, value) => {
@@ -441,8 +443,11 @@ export default function EditorSidebar({
   };
   // --- END: Sync handler ---
 
-  // --- REFACTORED FOR AUTO-SCROLL ---
-  // This function ONLY handles scrolling the preview
+  // --- USE PROPS ---
+  const toggleAccordion = (id) => {
+    onAccordionToggle(id);
+  };
+  
   const handleSectionFocus = (id) => {
     if (!id || !businessData?.pages) return;
 
@@ -452,12 +457,9 @@ export default function EditorSidebar({
     const homePath = homePage?.path || businessData.pages[0]?.path;
     let path = homePath;
 
-    // --- THIS IS THE FIX ---
-    // The sectionIdMap now correctly uses the businessData
-    // properties to find the *actual* ID for the section.
     const sectionIdMap = {
-      hero: 'home', // Special case for hero
-      global: 'home', // Scroll to top for global
+      hero: 'home', 
+      global: 'home',
       about: businessData.aboutSectionId || 'about',
       events: businessData.eventsSectionId || 'events',
       menu: businessData.menuSectionId || 'menu',
@@ -468,7 +470,6 @@ export default function EditorSidebar({
         'collection',
       feature2: businessData.feature2SectionId || 'feature2',
       footer: businessData.footerSectionId || 'contact',
-      // 'products' is a special case handled in toggleAccordion
       products: 
         businessData.bestSellersSectionId || 
         businessData.collectionSectionId ||
@@ -479,45 +480,24 @@ export default function EditorSidebar({
       reviews: businessData.reviewsSectionId || 'reviews',
       specialty: businessData.specialtySectionId || 'specialty',
     };
-    // --- END OF FIX ---
-
+    
     const sectionId = sectionIdMap[id];
 
-    if (sectionId && sectionId !== 'home') {
-      path = `${homePath}#${sectionId}`;
-    } else {
-      path = homePath; // Default to home
-    }
-    
-    onPageChange(path);
-  };
-
-  // --- THIS IS THE FIX for Products/Categories ---
-  // This function now handles accordion state AND calls the focus/scroll function
-  const toggleAccordion = (id) => {
-    const newActiveId = activeAccordion === id ? null : id;
-    setActiveAccordion(newActiveId);
-
-    // Always scroll to the section when it's opened
-    if (newActiveId) {
-      if (newActiveId === 'products') {
-        // SPECIAL CASE: Find the 'Shop' page and navigate to it
-        const shopPage = businessData.pages.find(
-          (p) => p.name.toLowerCase() === 'shop'
-        );
-        if (shopPage) {
-          onPageChange(shopPage.path);
-        } else {
-          // Fallback if no shop page (shouldn't happen)
-          handleSectionFocus('products');
-        }
-      } else {
-        // Default behavior: scroll to homepage section
-        handleSectionFocus(newActiveId);
+    if (id === 'products') {
+      const shopPage = businessData.pages.find(
+        (p) => p.name.toLowerCase() === 'shop'
+      );
+      if (shopPage) {
+        onPageChange(shopPage.path);
       }
+    } else if (sectionId && sectionId !== 'home') {
+      path = `${homePath}#${sectionId}`;
+      onPageChange(path);
+    } else if (sectionId === 'home') {
+      onPageChange(homePath);
     }
   };
-  // --- END OF FIX ---
+  // --- END OF REFACTOR ---
 
 
   // --- Handlers for dynamic lists ---
@@ -669,7 +649,36 @@ export default function EditorSidebar({
               isOpen={activeAccordion === 'global'}
               onClick={() => toggleAccordion('global')}
             >
-              {/* This field will only show if 'announcementBar' exists in the data */}
+              {/* --- THIS IS THE FIX: FLARA INFO BAR EDIT --- */}
+              {businessData?.infoBar !== undefined && (
+                <>
+                  <EditorInput
+                    label="Info Bar Text 1"
+                    value={getSafe(businessData, 'infoBar.0')}
+                    onChange={(e) =>
+                      handleDataChange('infoBar.0', e.target.value)
+                    }
+                    onFocus={() => handleSectionFocus('global')}
+                  />
+                  <EditorInput
+                    label="Info Bar Text 2"
+                    value={getSafe(businessData, 'infoBar.1')}
+                    onChange={(e) =>
+                      handleDataChange('infoBar.1', e.target.value)
+                    }
+                    onFocus={() => handleSectionFocus('global')}
+                  />
+                  <EditorInput
+                    label="Info Bar Text 3"
+                    value={getSafe(businessData, 'infoBar.2')}
+                    onChange={(e) =>
+                      handleDataChange('infoBar.2', e.target.value)
+                    }
+                    onFocus={() => handleSectionFocus('global')}
+                  />
+                </>
+              )}
+              {/* --- END FLARA INFO BAR --- */}
               {businessData?.announcementBar !== undefined && (
                 <EditorInput
                   label="Announcement Bar"
@@ -680,7 +689,6 @@ export default function EditorSidebar({
                   onFocus={() => handleSectionFocus('global')}
                 />
               )}
-              {/* --- UPDATED: Business Name --- */}
               <EditorInput
                 label="Business Name"
                 value={getSafe(businessData, 'name')}
@@ -688,7 +696,6 @@ export default function EditorSidebar({
                 onFocus={() => handleSectionFocus('global')}
                 isRequired={true}
               />
-              {/* --- UPDATED: Logo Text --- */}
               <EditorInput
                 label="Logo Text"
                 value={getSafe(businessData, 'logoText')}
@@ -735,7 +742,6 @@ export default function EditorSidebar({
                   onChange={(e) => handleDataChange('hero.cta', e.target.value)}
                   onFocus={() => handleSectionFocus('hero')}
                 />
-                {/* Only show image upload if hero.image exists */}
                 {businessData?.hero?.image !== undefined && (
                   <EditorImageUpload
                     label="Hero Image"
@@ -824,7 +830,7 @@ export default function EditorSidebar({
                   }
                   onFocus={() => handleSectionFocus('about')}
                 />
-                <EditorTextArea
+                 <EditorTextArea
                   label="Text"
                   value={getSafe(businessData, 'feature1.text')}
                   onChange={(e) =>
@@ -840,7 +846,7 @@ export default function EditorSidebar({
                   }
                   onFocus={() => handleSectionFocus('about')}
                 />
-                <EditorImageUpload
+                 <EditorImageUpload
                   label="About Image"
                   value={getSafe(businessData, 'feature1.image')}
                   onChange={(e) =>
@@ -850,7 +856,7 @@ export default function EditorSidebar({
                 />
               </AccordionItem>
             )}
-
+            
             {/* --- AVENIX ABOUT --- */}
             {businessData?.about?.subheading && (
               <AccordionItem
@@ -1125,7 +1131,7 @@ export default function EditorSidebar({
                   }
                   onFocus={() => handleSectionFocus('feature2')}
                 />
-                <EditorTextArea
+                 <EditorTextArea
                   label="Text"
                   value={getSafe(businessData, 'feature2.text')}
                   onChange={(e) =>
@@ -1133,7 +1139,7 @@ export default function EditorSidebar({
                   }
                   onFocus={() => handleSectionFocus('feature2')}
                 />
-                <EditorTextArea
+                 <EditorTextArea
                   label="Sub-text"
                   value={getSafe(businessData, 'feature2.subtext')}
                   onChange={(e) =>
@@ -1141,7 +1147,7 @@ export default function EditorSidebar({
                   }
                   onFocus={() => handleSectionFocus('feature2')}
                 />
-                <EditorImageUpload
+                 <EditorImageUpload
                   label="Image 1"
                   value={getSafe(businessData, 'feature2.image1')}
                   onChange={(e) =>
@@ -1159,7 +1165,7 @@ export default function EditorSidebar({
                 />
               </AccordionItem>
             )}
-
+            
             {/* --- AVENIX CTA SECTION --- */}
             {businessData?.ctaSection && (
               <AccordionItem
@@ -1380,118 +1386,88 @@ export default function EditorSidebar({
               isOpen={activeAccordion === 'products'}
               onClick={() => toggleAccordion('products')}
             >
-              {/* --- CATEGORY MANAGER --- */}
-              <h4 className="text-base font-semibold text-gray-800 mb-2">
-                Categories
-              </h4>
-              {allCategories.map((category, index) => (
-                <div key={category.id} className="flex items-end gap-2">
-                  <EditorInput
-                    label={`Category ${index + 1}`}
-                    value={category.name}
-                    onChange={(e) =>
-                      handleDataChange(`categories.${index}.name`, e.target.value)
-                    }
-                    onFocus={() => handleSectionFocus('products')}
-                  />
-                  <button
-                    onClick={() => handleRemoveCategory(category.id)}
-                    className="mb-4 p-2 text-gray-400 hover:text-red-500"
-                  >
-                    <Trash size={16} />
-                  </button>
+                {/* --- CATEGORY MANAGER --- */}
+                <h4 className="text-base font-semibold text-gray-800 mb-2">Categories</h4>
+                {allCategories.map((category, index) => (
+                    <div key={category.id} className="flex items-end gap-2">
+                        <EditorInput
+                            label={`Category ${index + 1}`}
+                            value={category.name}
+                            onChange={(e) => handleDataChange(`categories.${index}.name`, e.target.value)}
+                            onFocus={() => handleSectionFocus('products')}
+                        />
+                        <button 
+                            onClick={() => handleRemoveCategory(category.id)}
+                            className="mb-4 p-2 text-gray-400 hover:text-red-500"
+                        >
+                            <Trash size={16} />
+                        </button>
+                    </div>
+                ))}
+                <div className="flex gap-2 mb-6">
+                    <input
+                        type="text"
+                        placeholder="New category name..."
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        onFocus={() => handleSectionFocus('products')}
+                        className="flex-grow px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                        onClick={handleAddCategory}
+                        className="flex-shrink-0 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                    >
+                        Add
+                    </button>
                 </div>
-              ))}
-              <div className="flex gap-2 mb-6">
-                <input
-                  type="text"
-                  placeholder="New category name..."
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  onFocus={() => handleSectionFocus('products')}
-                  className="flex-grow px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                
+                {/* --- PRODUCT MANAGER --- */}
+                <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">All Products</h4>
+                {allProducts.map((product, index) => (
+                    <div key={product.id || index} className="p-3 border rounded-md mb-2 bg-white relative">
+                        <button 
+                            onClick={() => handleRemoveProduct(product.id)}
+                            className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
+                        >
+                            <Trash size={16} />
+                        </button>
+                        <EditorInput
+                            label={`Product ${index + 1} Name`}
+                            value={product.name}
+                            onChange={(e) => handleDataChange(`allProducts.${index}.name`, e.target.value)}
+                            onFocus={() => handleSectionFocus('products')}
+                        />
+                        <EditorInput
+                            label={`Price`}
+                            value={product.price}
+                            onChange={(e) => handleDataChange(`allProducts.${index}.price`, Number(e.target.value) || 0)}
+                            onFocus={() => handleSectionFocus('products')}
+                        />
+                        <EditorSelect
+                            label="Category"
+                            value={product.category}
+                            onChange={(e) => handleDataChange(`allProducts.${index}.category`, e.target.value)}
+                            options={categoryOptions}
+                            placeholder="Select a category"
+                            onFocus={() => handleSectionFocus('products')}
+                        />
+                        <EditorImageUpload
+                            label={`Image`}
+                            value={product.image}
+                            onChange={(e) => handleDataChange(`allProducts.${index}.image`, e.target.value)}
+                            onFocus={() => handleSectionFocus('products')}
+                        />
+                    </div>
+                ))}
                 <button
-                  onClick={handleAddCategory}
-                  className="flex-shrink-0 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                    onClick={handleAddProduct}
+                    className="w-full mt-2 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
                 >
-                  Add
+                    Add New Product
                 </button>
-              </div>
-
-              {/* --- PRODUCT MANAGER --- */}
-              <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">
-                All Products
-              </h4>
-              {allProducts.map((product, index) => (
-                <div
-                  key={product.id || index}
-                  className="p-3 border rounded-md mb-2 bg-white relative"
-                >
-                  <button
-                    onClick={() => handleRemoveProduct(product.id)}
-                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
-                  >
-                    <Trash size={16} />
-                  </button>
-                  <EditorInput
-                    label={`Product ${index + 1} Name`}
-                    value={product.name}
-                    onChange={(e) =>
-                      handleDataChange(
-                        `allProducts.${index}.name`,
-                        e.target.value
-                      )
-                    }
-                    onFocus={() => handleSectionFocus('products')}
-                  />
-                  <EditorInput
-                    label={`Price`}
-                    value={product.price}
-                    onChange={(e) =>
-                      handleDataChange(
-                        `allProducts.${index}.price`,
-                        Number(e.target.value) || 0
-                      )
-                    }
-                    onFocus={() => handleSectionFocus('products')}
-                  />
-                  <EditorSelect
-                    label="Category"
-                    value={product.category}
-                    onChange={(e) =>
-                      handleDataChange(
-                        `allProducts.${index}.category`,
-                        e.target.value
-                      )
-                    }
-                    options={categoryOptions}
-                    placeholder="Select a category"
-                    onFocus={() => handleSectionFocus('products')}
-                  />
-                  <EditorImageUpload
-                    label={`Image`}
-                    value={product.image}
-                    onChange={(e) =>
-                      handleDataChange(
-                        `allProducts.${index}.image`,
-                        e.target.value
-                      )
-                    }
-                    onFocus={() => handleSectionFocus('products')}
-                  />
-                </div>
-              ))}
-              <button
-                onClick={handleAddProduct}
-                className="w-full mt-2 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
-              >
-                Add New Product
-              </button>
             </AccordionItem>
-
+            
             {/* --- GENERIC HOMEPAGE COLLECTION MANAGER --- */}
-            {/* This accordion will only show if at least one homepage collection (by any name) exists */}
             {(homepageProductIDs.length > 0 || businessData?.menu?.itemIDs) && (
               <AccordionItem
                 title="Home Page Collections"
@@ -1511,21 +1487,16 @@ export default function EditorSidebar({
                     </h4>
                     {collectionIDs.map((id, index) => (
                       <EditorSelect
-                        key={`coll-${index}`}
-                        label={`Collection Slot ${index + 1}`}
-                        value={id}
-                        onChange={(e) =>
-                          handleDataChange(
-                            `collection.itemIDs.${index}`,
-                            Number(e.target.value)
-                          )
-                        }
-                        options={[
-                          ...productOptions.filter((p) => p.value === id),
-                          ...homepageProductOptions,
-                        ]} // Show current + available
-                        placeholder="Select a product"
-                        onFocus={() => handleSectionFocus('collection')}
+                          key={`coll-${index}`}
+                          label={`Collection Slot ${index + 1}`}
+                          value={id}
+                          onChange={(e) => handleDataChange(`collection.itemIDs.${index}`, Number(e.target.value))}
+                          options={[
+                            ...productOptions.filter(p => p.value === id), 
+                            ...homepageProductOptions
+                          ]} // Show current + available
+                          placeholder="Select a product"
+                          onFocus={() => handleSectionFocus('collection')}
                       />
                     ))}
                   </>
@@ -1539,26 +1510,21 @@ export default function EditorSidebar({
                     </h4>
                     {bestSellerIDs.map((id, index) => (
                       <EditorSelect
-                        key={`best-${index}`}
-                        label={`Best Seller Slot ${index + 1}`}
-                        value={id}
-                        onChange={(e) =>
-                          handleDataChange(
-                            `bestSellers.itemIDs.${index}`,
-                            Number(e.target.value)
-                          )
-                        }
-                        options={[
-                          ...productOptions.filter((p) => p.value === id),
-                          ...homepageProductOptions,
-                        ]}
-                        placeholder="Select a product"
-                        onFocus={() => handleSectionFocus('products')}
+                          key={`best-${index}`}
+                          label={`Best Seller Slot ${index + 1}`}
+                          value={id}
+                          onChange={(e) => handleDataChange(`bestSellers.itemIDs.${index}`, Number(e.target.value))}
+                          options={[
+                            ...productOptions.filter(p => p.value === id), 
+                            ...homepageProductOptions
+                          ]}
+                          placeholder="Select a product"
+                          onFocus={() => handleSectionFocus('products')}
                       />
                     ))}
                   </>
                 )}
-
+                
                 {/* --- AVENIX: newArrivals --- */}
                 {businessData?.newArrivals && (
                   <>
@@ -1568,91 +1534,68 @@ export default function EditorSidebar({
                     <EditorInput
                       label="Section Heading"
                       value={getSafe(businessData, 'newArrivals.heading')}
-                      onChange={(e) =>
-                        handleDataChange('newArrivals.heading', e.target.value)
-                      }
+                      onChange={(e) => handleDataChange('newArrivals.heading', e.target.value)}
                       onFocus={() => handleSectionFocus('products')}
                     />
                     <EditorInput
                       label="Section Title"
                       value={getSafe(businessData, 'newArrivals.title')}
-                      onChange={(e) =>
-                        handleDataChange('newArrivals.title', e.target.value)
-                      }
+                      onChange={(e) => handleDataChange('newArrivals.title', e.target.value)}
                       onFocus={() => handleSectionFocus('products')}
                     />
                     {newArrivalsIDs.map((id, index) => (
                       <EditorSelect
-                        key={`new-${index}`}
-                        label={`New Arrival Slot ${index + 1}`}
-                        value={id}
-                        onChange={(e) =>
-                          handleDataChange(
-                            `newArrivals.itemIDs.${index}`,
-                            Number(e.target.value)
-                          )
-                        }
-                        options={[
-                          ...productOptions.filter((p) => p.value === id),
-                          ...homepageProductOptions,
-                        ]}
-                        placeholder="Select a product"
-                        onFocus={() => handleSectionFocus('products')}
+                          key={`new-${index}`}
+                          label={`New Arrival Slot ${index + 1}`}
+                          value={id}
+                          onChange={(e) => handleDataChange(`newArrivals.itemIDs.${index}`, Number(e.target.value))}
+                          options={[
+                            ...productOptions.filter(p => p.value === id), 
+                            ...homepageProductOptions
+                          ]}
+                          placeholder="Select a product"
+                          onFocus={() => handleSectionFocus('products')}
                       />
                     ))}
                   </>
                 )}
-
+                
                 {/* --- AVENIX: featured --- */}
                 {businessData?.featured && (
                   <>
                     <h4 className="text-base font-semibold text-gray-800 mb-2 mt-6">
                       "Featured Products" Section
                     </h4>
-                    <EditorInput
+                     <EditorInput
                       label="Section Heading"
                       value={getSafe(businessData, 'featured.sectionHeading')}
-                      onChange={(e) =>
-                        handleDataChange(
-                          'featured.sectionHeading',
-                          e.target.value
-                        )
-                      }
+                      onChange={(e) => handleDataChange('featured.sectionHeading', e.target.value)}
                       onFocus={() => handleSectionFocus('collection')}
                     />
                     <EditorInput
                       label="Section Title"
                       value={getSafe(businessData, 'featured.title')}
-                      onChange={(e) =>
-                        handleDataChange('featured.title', e.target.value)
-                      }
+                      onChange={(e) => handleDataChange('featured.title', e.target.value)}
                       onFocus={() => handleSectionFocus('collection')}
                     />
                     <EditorImageUpload
                       label="Large Image"
                       value={getSafe(businessData, 'featured.largeImage')}
-                      onChange={(e) =>
-                        handleDataChange('featured.largeImage', e.target.value)
-                      }
+                      onChange={(e) => handleDataChange('featured.largeImage', e.target.value)}
                       onFocus={() => handleSectionFocus('collection')}
                     />
                     {featuredIDs.map((id, index) => (
                       <EditorSelect
-                        key={`feat-${index}`}
-                        label={`Featured Slot ${index + 1}`}
-                        value={id}
-                        onChange={(e) =>
-                          handleDataChange(
-                            `featured.itemIDs.${index}`,
-                            Number(e.target.value)
-                          )
-                        }
-                        options={[
-                          ...productOptions.filter((p) => p.value === id),
-                          ...homepageProductOptions,
-                        ]}
-                        placeholder="Select a product"
-                        onFocus={() => handleSectionFocus('collection')}
+                          key={`feat-${index}`}
+                          label={`Featured Slot ${index + 1}`}
+                          value={id}
+                          onChange={(e) => handleDataChange(`featured.itemIDs.${index}`, Number(e.target.value))}
+                          options={[
+                            ...productOptions.filter(p => p.value === id), 
+                            ...homepageProductOptions
+                          ]}
+                          placeholder="Select a product"
+                          onFocus={() => handleSectionFocus('collection')}
                       />
                     ))}
                   </>
@@ -1731,7 +1674,7 @@ export default function EditorSidebar({
                 )}
               </AccordionItem>
             )}
-
+            
             {/* --- THIS IS THE FIX: AVENIX BLOG --- */}
             {businessData?.blog?.heading && businessData?.blog?.items?.[0]?.category && (
               <AccordionItem
@@ -2159,36 +2102,22 @@ export default function EditorSidebar({
                 SEO, Domain, and other settings will go here.
               </p>
             </section>
-
+            
             <section>
               <SectionTitle label="Store Management" />
               <div className="space-y-1">
                 <SidebarLink icon={Store} label="Manage Store" onClick={() => {}} />
-                <SidebarLink
-                  icon={Calendar}
-                  label="Manage Appointments"
-                  onClick={() => {}}
-                />
-                <SidebarLink
-                  icon={Tag}
-                  label="Manage Promotions"
-                  onClick={() => {}}
-                />
-                <SidebarLink
-                  icon={MessageCircle}
-                  label="Manage Chat"
-                  onClick={() => {}}
-                />
-                <SidebarLink
-                  icon={Contact}
-                  label="Manage Contacts"
-                  onClick={() => {}}
-                />
+                <SidebarLink icon={Calendar} label="Manage Appointments" onClick={() => {}} />
+                <SidebarLink icon={Tag} label="Manage Promotions" onClick={() => {}} />
+                <SidebarLink icon={MessageCircle} label="Manage Chat" onClick={() => {}} />
+                <SidebarLink icon={Contact} label="Manage Contacts" onClick={() => {}} />
               </div>
             </section>
           </div>
         )}
+
       </div>
+      
     </div>
   );
 }

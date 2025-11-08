@@ -5,6 +5,7 @@ import { businessData as initialBusinessData } from './data.js';
 import { Header, Footer } from './components.js';
 import { CartProvider, useCart } from './cartContext.js';
 import { TemplateContext } from './templateContext.js'; // Import the new context
+import { Editable } from '@/components/editor/Editable'; // --- IMPORT EDITABLE ---
 
 // Inner component to access cart context
 function CartLayout({ children }) {
@@ -104,11 +105,13 @@ function CartLayout({ children }) {
               style={fontVariables} // Apply font variables here
             >
                 {/* --- THIS IS NOW DYNAMIC --- */}
-                {businessData.announcementBar && (
-                    <div className="text-center py-2 text-sm bg-brand-primary text-brand-text">
-                        {businessData.announcementBar}
-                    </div>
-                )}
+                <Editable focusId="global">
+                    {businessData.announcementBar && (
+                        <div className="text-center py-2 text-sm bg-brand-primary text-brand-text">
+                            {businessData.announcementBar}
+                        </div>
+                    )}
+                </Editable>
                 
                 <Header 
                     business={{ logoText: businessData.logoText, navigation: businessData.navigation }} 
@@ -120,7 +123,11 @@ function CartLayout({ children }) {
                     {children}
                 </main>
                 
-                <Footer /> 
+                {/* --- WRAP FOOTER WITH EDITABLE --- */}
+                <Editable focusId="footer">
+                    <Footer /> 
+                </Editable>
+                {/* --- END OF WRAP --- */}
 
                 {/* Cart Modal... */}
                 {isCartOpen && (
