@@ -86,7 +86,7 @@ const RestartConfirmationModal = ({ isOpen, onClose, onConfirm }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
         <div className="flex items-start">
           <div className="ml-4 text-left">
@@ -134,11 +134,9 @@ export default function EditorTopNav({
     onRedo,
     canUndo,
     canRedo,
-    onRestart // <-- NEW PROP
+    onRestart
 }) {
   const [isPageDropdownOpen, setIsPageDropdownOpen] = useState(false);
-  
-  // --- ADDED: State for modal ---
   const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
   
   const currentPageName = pages.find(p => p.path === activePage)?.name || 'Home';
@@ -149,9 +147,8 @@ export default function EditorTopNav({
     setIsPageDropdownOpen(false);
   };
 
-  // --- ADDED: Handler for restart ---
   const handleRestartConfirm = () => {
-    onRestart(); // Call the function passed from EditorLayout
+    onRestart();
     setIsRestartModalOpen(false);
   };
 
@@ -161,9 +158,11 @@ export default function EditorTopNav({
       <div className="w-full h-[65px] border-b border-gray-200 px-4 flex items-center justify-between">
         {/* Left Side */}
         <div className="flex items-center gap-6">
-          <div className="text-xl font-bold text-gray-900">
-            BizVistar
-          </div>
+          <Link href="/">
+            <span className="text-xl font-bold text-gray-900 cursor-pointer">
+              BizVistar
+            </span>
+          </Link>
           <div className="flex items-center gap-2">
             <Tooltip
               title="Hire a Professional"
@@ -171,7 +170,6 @@ export default function EditorTopNav({
             >
               <NavButton>Hire a Professional</NavButton>
             </Tooltip>
-            {/* "Help" button with no Tooltip */}
             <NavButton>Help</NavButton>
           </div>
         </div>
@@ -183,7 +181,6 @@ export default function EditorTopNav({
             title="Reset Template"
             description="Reset all changes made to this template back to their original settings."
           >
-            {/* --- UPDATED: onClick to open modal --- */}
             <button 
               onClick={() => setIsRestartModalOpen(true)}
               className="flex items-center gap-2 text-sm font-medium text-gray-700 px-3 py-2 rounded-md transition-colors"
@@ -203,7 +200,6 @@ export default function EditorTopNav({
             </NavButton>
           </Tooltip>
 
-          {/* --- THIS IS THE LINK TO THE PREVIEW PAGE --- */}
           <Tooltip
             title="Preview"
             description="See what your live site will look like to visitors."
@@ -217,20 +213,23 @@ export default function EditorTopNav({
               Preview
             </Link>
           </Tooltip>
-          {/* --- END OF LINK --- */}
           
-          <button className="flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-6 py-2 rounded-4xl hover:bg-blue-700 transition-colors">
+          {/* --- THIS IS THE CHANGE --- */}
+          <Link
+            href="/get-started/pricing" // <-- Navigates to the new page
+            className="flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-6 py-2 rounded-4xl hover:bg-blue-700 transition-colors"
+          >
             Publish
-          </button>
+          </Link>
+          {/* --- END OF CHANGE --- */}
+
         </div>
       </div>
 
-      {/* Second Bar */}
+      {/* Second Bar (No changes) */}
       <div className="w-full h-[50px] border-b border-gray-200 px-4 flex items-center">
-        
         {/* Left: Page & Devices */}
         <div className="flex items-center gap-4">
-          
           <div className="relative">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Page:</span>
@@ -256,10 +255,7 @@ export default function EditorTopNav({
               </div>
             )}
           </div>
-
-
           <VerticalSeparator />
-
           <div className="flex items-center gap-2">
             <Tooltip title="Desktop View" description="See how your site looks on a computer.">
               <button
@@ -278,10 +274,8 @@ export default function EditorTopNav({
               </button>
             </Tooltip>
           </div>
-
           <VerticalSeparator />
         </div>
-
         {/* Center: URL Bar with Tooltip */}
         <div className="flex-grow min-w-0 mx-4">
           <Tooltip
@@ -294,11 +288,9 @@ export default function EditorTopNav({
             </div>
           </Tooltip>
         </div>
-
         {/* Right: Tools (Undo/Redo) with conditional Tooltips */}
         <div className="flex items-center gap-2 text-gray-600">
           <VerticalSeparator />
-          
           {canUndo ? (
             <Tooltip title="Undo" description="Undo your last action.">
               <button 
@@ -318,7 +310,6 @@ export default function EditorTopNav({
               <IconUndo />
             </button>
           )}
-
           {canRedo ? (
             <Tooltip title="Redo" description="Redo an action you undid.">
               <button 
@@ -341,7 +332,6 @@ export default function EditorTopNav({
         </div>
       </div>
 
-      {/* --- ADDED: Render the modal --- */}
       <RestartConfirmationModal
         isOpen={isRestartModalOpen}
         onClose={() => setIsRestartModalOpen(false)}
