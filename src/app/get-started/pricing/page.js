@@ -39,7 +39,7 @@ export default function PricingPage() {
           'AI-Generated Professional Website',
           'Easy-to-Use Editor',
           'Secure Hosting & Subdomain',
-          '1 Business Tool (e.g., Photo Gallery)',
+          '1 Business Tool ',
           'Automated Order Emails',
           'Standard Email Support',
         ],
@@ -90,7 +90,7 @@ export default function PricingPage() {
           'AI-Generated Professional Website',
           'Easy-to-Use Editor',
           'Secure Hosting & Subdomain',
-          '1 Business Tool (e.g., Photo Gallery)',
+          '1 Business Tool ',
           'Automated Order Emails',
           'Standard Email Support',
         ],
@@ -323,7 +323,7 @@ const PlanCard = ({ plan, isYearly, className }) => (
     )}
     
     <div className="p-10 text-center flex-grow flex flex-col">
-      <h3 className="text-3xl font-bold text-gray-900">{plan.name}</h3>
+      <h3 className="text-5xl font-bold text-gray-900">{plan.name}</h3>
       <p className="text-gray-500 font-medium mt-2">{plan.subtitle}</p>
 
       {/* --- THIS IS THE UPDATED PRICE SECTION --- */}
