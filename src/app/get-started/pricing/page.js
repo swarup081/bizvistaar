@@ -138,7 +138,7 @@ export default function PricingPage() {
   const maxSavings = 17; // Hardcoded based on your request "SAVE 17%"
 
   return (
-    <div className="py-20 sm:py-28 bg-white font-sans text-gray-900">
+    <div className="py-17 sm:py-25 bg-white font-sans text-gray-900">
       <div className="container mx-auto px-6 max-w-7xl">
         
         {/* --- Header & Toggle --- */}
