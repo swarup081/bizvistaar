@@ -385,10 +385,8 @@ export default function PricingPage() {
         </div>
 
         {/* --- FAQ Section --- */}
-        <div className="mt-32 max-w-4xl mx-auto">
-          <h2 className="text-4xl font-bold text-gray-900 text-center mb-16">
-            Frequently Asked Questions
-          </h2>
+        <div className="mt-32 max-w-7xl mx-auto">
+          {/* h2 is removed and now inside FaqSection */}
           <FaqSection />
         </div>
 
@@ -684,6 +682,7 @@ const ComparisonTable = () => (
 );
 
 // --- Sub-component: FaqSection (Clean Accordion) ---
+// --- THIS IS THE START OF THE CHANGED SECTION ---
 const FaqItem = ({ q, a }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -691,14 +690,16 @@ const FaqItem = ({ q, a }) => {
     <div className="border-b border-gray-200 last:border-b-0">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between py-6 text-left hover:text-purple-600 transition-colors"
+        className="flex w-full items-center justify-between py-5 text-left text-gray-900" // STYLE CHANGED
       >
-        <span className="text-xl font-semibold text-gray-900">{q}</span>
+        <span className="text-lg font-medium text-gray-900">{q}</span> {/* STYLE CHANGED */}
         <ChevronDown
-          className={cn('h-6 w-6 text-gray-400 transition-transform duration-300', isOpen ? 'rotate-180 text-purple-600' : '')}
+          className={cn(
+            'h-5 w-5 text-gray-400 transition-transform duration-300', // STYLE CHANGED
+            isOpen ? 'rotate-180' : ''
+          )}
         />
       </button>
-      {/* --- FIX: Added AnimatePresence and motion.div for smooth animation --- */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -708,8 +709,8 @@ const FaqItem = ({ q, a }) => {
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="pb-6 pr-12 text-lg text-gray-600 leading-relaxed">
-              {a}
+            <div className="pb-5 pr-10 text-base text-gray-600 leading-relaxed"> {/* STYLE CHANGED, SUPPORT JSX */}
+              {typeof a === 'string' ? <p>{a}</p> : a}
             </div>
           </motion.div>
         )}
@@ -719,30 +720,83 @@ const FaqItem = ({ q, a }) => {
 };
 
 const FaqSection = () => {
+  // NEW faqs based on screenshot
   const faqs = [
     {
-      q: 'What is a "Done-for-You" Social Media Post?',
-      a: 'It means you don\'t have to do anything! Our team will design a professional post, write a compelling caption for it, and post it to your social media (like Instagram or Facebook) for you, 3 times a month on the Pro plan and 8 times a month on the Growth plan.'
+      q: 'What is a Premium plan?',
+      a: 'A Premium plan is a subscription that gives you access to all of BizVistar\'s advanced features, including custom domain connection, removal of BizVistar branding, increased storage, and access to our "Done-for-You" services.'
     },
     {
-      q: 'What is "Priority WhatsApp Support"?',
-      a: 'Instead of emailing a support center, Pro and Growth members get a dedicated WhatsApp number. You can send questions, request simple text updates, or ask for help, and a real person who knows your site will get back to you quickly. It\'s like having a tech expert on your team.'
+      q: 'Can I get a refund for a Premium plan?',
+      a: 'Yes, we offer a 14-day money-back guarantee on all our annual Premium plans. If you are not satisfied for any reason, you can cancel within 14 days of purchase and receive a full refund, no questions asked.'
     },
     {
-      q: 'Can I cancel my plan anytime?',
-      a: 'Yes. All our plans are billed monthly and have no long-term contracts. You can cancel your subscription at any time.'
+      q: 'How do I get my free domain?',
+      a: 'A free custom domain for one year is included with the "Growth" annual plan. After you upgrade, you will receive a voucher to claim your free domain, which you can register directly through your BizVistar dashboard.'
     },
     {
-      q: 'What\'s the difference between a Subdomain and a Custom Domain?',
-      a: 'A subdomain (included in all plans) looks like "yourbusiness.bizvistar.com". A custom domain (free for the first year on Growth) is a fully custom URL like "yourbusiness.com", which looks more professional and is better for branding.'
+      q: 'Why do I need a custom domain?',
+      a: 'A custom domain (e.g., yourbusiness.com) builds credibility, strengthens your brand, and makes it easier for customers to find you. It looks more professional than a free subdomain (e.g., yourbusiness.bizvistar.com).'
+    },
+    {
+      q: 'How can I get my own personalized email address?',
+      a: 'Once you have a custom domain, you can set up a personalized email address (e.g., info@yourbusiness.com) through our integration with Google Workspace or other third-party email providers.'
+    },
+    {
+      q: 'Where can I find my billing information?',
+      a: 'You can find all your billing information, including invoices and subscription details, in the "Billing & Payments" section of your account dashboard after you sign in.'
+    },
+    {
+      q: 'What online payments are accepted?',
+      a: 'We accept all major credit cards (Visa, MasterCard, American Express) as well as UPI, Net Banking, and other popular payment methods for our Indian customers.'
+    },
+    {
+      q: 'How do I know if the Enterprise plan is right for my business?',
+      a: 'Our Enterprise plan is designed for large-scale businesses with specific needs for custom features, dedicated support, and advanced security. If you have multiple locations or require custom integrations, our Enterprise team can help. Contact us for a consultation.'
+    },
+    {
+      q: 'How do I contact the Enterprise team?',
+      a: 'You can contact our Enterprise team by filling out the contact form on our "Enterprise" page or by reaching out to your dedicated account manager if you are an existing customer.'
+    },
+    {
+      q: 'How does BizVistar handle security assessments/questionnaires?',
+      // Pass JSX to support links
+      a: (
+        <p>
+          For information on how BizVistar protects your data, compliance, certifications, GDPR and more, check out our{' '}
+          <a href="#" className="text-blue-600 hover:underline">white paper</a>. 
+          For security questions specific to your business, contact the Enterprise team using the form above.
+        </p>
+      )
     },
   ];
 
   return (
-    <div className="bg-white p-8 sm:p-12 rounded-3xl shadow-xl border border-gray-100">
-      {faqs.map((faq, i) => (
-        <FaqItem key={i} q={faq.q} a={faq.a} />
-      ))}
+    // NEW 2-column layout
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-12 gap-y-8">
+      {/* Left Column: Title & Description */}
+      <div className="lg:col-span-1">
+        <h2 className="text-4xl font-bold text-gray-900 mb-4">
+          Frequently asked questions
+        </h2>
+        <p className="text-lg text-gray-600">
+          Haven't found what you're looking for? Try the{' '}
+          <a href="#" className="text-blue-600 hover:underline">BizVistar Help Center</a>{' '}
+          or{' '}
+          <a href="#" className="text-blue-600 hover:underline">contact us</a>.
+        </p>
+      </div>
+      
+      {/* Right Column: Accordion */}
+      <div className="lg:col-span-2">
+        {/* Removed the outer card styling */}
+        <div>
+          {faqs.map((faq, i) => (
+            <FaqItem key={i} q={faq.q} a={faq.a} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
+// --- THIS IS THE END OF THE CHANGED SECTION ---
