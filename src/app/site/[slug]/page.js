@@ -1,19 +1,24 @@
 // src/app/site/[slug]/page.js
 import { createClient } from '@supabase/supabase-js';
 
-// IMPORTANT: This page runs on the VERCEL SERVER, not the browser.
-// We MUST use the SERVICE_ROLE_KEY to securely fetch any
-// website's data, bypassing Row Level Security.
+// --- START OF NEW DEBUG LOGS ---
+console.log("--- New Site Request ---");
+console.log("Checking Vercel Environment Variables...");
+console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "Loaded" : "MISSING!");
+console.log("Service Key:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "Loaded" : "MISSING!");
+// --- END OF NEW DEBUG LOGS ---
+
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // You must add this to Vercel
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// This is the "Live Site" page
 export default async function LiveSitePage({ params }) {
   const { slug } = params;
 
-  // 1. Fetch the website data from Supabase using the slug
+  // --- NEW DEBUG LOG ---
+  console.log(`Attempting to fetch site with slug: ${slug}`);
+
   const { data: site, error } = await supabaseAdmin
     .from('websites')
     .select(`
@@ -21,21 +26,36 @@ export default async function LiveSitePage({ params }) {
       website_data,
       template:templates ( name )
     `)
-    .eq('site_slug', slug) // Find the site by its slug
-    .single(); // We only expect one
+    .eq('site_slug', slug)
+    .single(); // Removed is_published for now to see if we can find it at all
 
-  // 2. Handle errors
-  if (error || !site) {
+  // --- MODIFIED ERROR HANDLING (to show us the error) ---
+  if (error) {
+    console.error("Supabase query error:", error.message);
     return (
       <div style={{ padding: '40px', textAlign: 'center' }}>
-        <h1>404 - Site Not Found</h1>
-        <p>We could not find a site with this URL.</p>
+        <h1>500 - Server Error</h1>
+        <p>Could not query database. Check Vercel logs.</p>
+        <p style={{ color: 'red' }}>Error: {error.message}</p>
       </div>
     );
   }
 
-  // 3. Handle "Not Published"
+  if (!site) {
+    console.warn("Query successful, but no site found.");
+    return (
+      <div style={{ padding: '40px', textAlign: 'center' }}>
+        <h1>404 - Site Not Found</h1>
+        <p>Query ran, but no site matches this slug:</p>
+        <p><strong>{slug}</strong></p>
+        <p>(Check for typos or if the row exists in your 'websites' table)</p>
+      </div>
+    );
+  }
+
+  // Check for publishing *after* finding the site
   if (!site.is_published) {
+    console.warn("Site found, but it is not published.");
     return (
       <div style={{ padding: '40px', textAlign: 'center' }}>
         <h1>Site Not Published</h1>
@@ -43,12 +63,11 @@ export default async function LiveSitePage({ params }) {
       </div>
     );
   }
+  // --- END OF MODIFICATIONS ---
 
-  // 4. SUCCESS! Display the raw data
-  // This proves the entire flow is working.
-  // The next step would be to render the actual template
-  // component here, passing this data in.
-  
+
+  // SUCCESS!
+  console.log("Success! Site found and is published.");
   const templateName = site.template.name;
   const websiteData = site.website_data;
 
