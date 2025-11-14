@@ -7,12 +7,17 @@ const supabaseAdmin = createClient(
 );
 
 export default async function LiveSitePage({ params }) {
+  
+  // --- NEW DEBUG LOGS ---
+  console.log("--- New Site Request ---");
+  console.log("Received Params Object:", JSON.stringify(params)); 
+  // This is the most important log. It should show: {"slug": "ajshdbqwhed178236-1763143942312"}
+  // --- END OF NEW DEBUG LOGS ---
+
   const { slug } = params;
 
-  // --- THIS IS THE NEW FIX ---
-  // If the slug is literally "undefined" (from a favicon request, etc.),
-  // stop immediately before we query the database.
   if (!slug || slug === 'undefined') {
+    console.warn(`Slug is '${slug}', showing 404.`); // This will tell us *why* it's failing
     return (
       <div style={{ padding: '40px', textAlign: 'center' }}>
         <h1>404 - Not Found</h1>
@@ -20,9 +25,11 @@ export default async function LiveSitePage({ params }) {
       </div>
     );
   }
-  // --- END OF FIX ---
+  
+  // If you see this log, the slug is working!
+  console.log(`Attempting to fetch site with slug: ${slug}`);
 
-
+  // 1. Fetch the website data from Supabase using the slug
   const { data: site, error } = await supabaseAdmin
     .from('websites')
     .select(`
@@ -33,6 +40,7 @@ export default async function LiveSitePage({ params }) {
     .eq('site_slug', slug)
     .single();
 
+  // 2. Handle errors
   if (error) {
     console.error("Supabase query error:", error.message);
     return (
@@ -44,6 +52,7 @@ export default async function LiveSitePage({ params }) {
     );
   }
 
+  // 3. Handle "Site Not Found" (after a successful query)
   if (!site) {
     console.warn("Query successful, but no site found.");
     return (
@@ -55,6 +64,7 @@ export default async function LiveSitePage({ params }) {
     );
   }
 
+  // 4. Handle "Not Published"
   if (!site.is_published) {
     console.warn("Site found, but it is not published.");
     return (
