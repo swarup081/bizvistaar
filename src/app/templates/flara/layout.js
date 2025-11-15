@@ -7,9 +7,13 @@ import { CartProvider, useCart } from './cartContext.js';
 import { TemplateContext } from './templateContext.js';
 import { Editable } from '@/components/editor/Editable';
 
-function CartLayout({ children }) {
-    const [businessData, setBusinessData] = useState(initialBusinessData); 
+function CartLayout({ children, serverData }) {
+    // --- FIX: `useState` typo corrected ---
+    const [businessData, setBusinessData] = useState(serverData || initialBusinessData); 
     const router = useRouter(); 
+    
+    // Define the base path for links
+    const basePath = serverData ? '.' : '/templates/flara';
     
     const { 
         cartCount, 
@@ -24,7 +28,7 @@ function CartLayout({ children }) {
     } = useCart();
 
     useEffect(() => {
-        // --- THEME LOGIC ---
+        // Theme logic ALWAYS runs
         document.body.classList.forEach(className => {
             if (className.startsWith('theme-')) {
                 document.body.classList.remove(className);
@@ -32,75 +36,45 @@ function CartLayout({ children }) {
         });
         document.body.classList.add(`theme-${businessData.theme.colorPalette}`);
 
-        // --- NEW CONTEXT-AWARE LOGIC ---
+        // This logic ONLY runs if it's NOT a live server-rendered site
+        if (serverData) return;
+
         let parentPath = '';
         try {
-            // Check if we are in an iframe and get parent URL
             parentPath = window.parent.location.pathname;
-        } catch (e) {
-            // Not in an iframe (e.g., live site)
-        }
+        } catch (e) { /* Not in iframe */ }
 
         const isEditor = parentPath.startsWith('/editor/');
         const isPreview = parentPath.startsWith('/preview/');
-        const isLiveSite = !isEditor && !isPreview;
 
         if (isEditor) {
-            // --- 1. We are in the EDITOR's iframe ---
             const handleMessage = (event) => {
-                if (event.data.type === 'UPDATE_DATA') {
-                    setBusinessData(event.data.payload);
-                }
+                if (event.data.type === 'UPDATE_DATA') setBusinessData(event.data.payload);
                 if (event.data.type === 'SCROLL_TO_SECTION') {
                     const element = document.getElementById(event.data.payload.sectionId);
-                    if (element) {
-                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
+                    if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
-                if (event.data.type === 'CHANGE_PAGE') {
-                    router.push(event.data.payload.path);
-                }
+                if (event.data.type === 'CHANGE_PAGE') router.push(event.data.payload.path);
             };
             window.addEventListener('message', handleMessage);
             window.parent.postMessage({ type: 'IFRAME_READY' }, '*');
             return () => window.removeEventListener('message', handleMessage);
         
         } else if (isPreview) {
-            // --- 2. We are in the PREVIEW's iframe ---
-            // Load data directly from the editor's localStorage key
-            const editorDataKey = `editorData_flara`; // Template-specific key
+            const editorDataKey = `editorData_flara`; 
             const savedData = localStorage.getItem(editorDataKey);
-            
             if (savedData) {
                 try {
                     setBusinessData(JSON.parse(savedData));
-                } catch (e) {
-                    console.error("Error parsing preview data", e);
-                }
-            }
-        
-        } else if (isLiveSite) {
-            // --- 3. We are on the LIVE site (or local dev) ---
-            // Fallback to basic startup info
-            const storedStoreName = localStorage.getItem('storeName');
-            if (storedStoreName) {
-                setBusinessData(prevData => ({
-                    ...prevData,
-                    name: storedStoreName,
-                    logoText: storedStoreName,
-                    footer: {
-                        ...prevData.footer,
-                        copyright: `© ${new Date().getFullYear()} ${storedStoreName}. All RightsReserved`
-                    }
-                }));
+                } catch (e) { console.error("Error parsing preview data", e); }
             }
         }
-        // --- END OF NEW LOGIC ---
+        // DELETING the `else if (isLiveSite)` block here fixes the hydration error
 
         return () => {
             document.body.classList.remove(`theme-${businessData.theme.colorPalette}`);
         };
-    }, [businessData.theme.colorPalette, router]);
+    }, [businessData.theme.colorPalette, router, serverData]);
 
     const createFontVariable = (fontName) => {
         if (!fontName) return '';
@@ -114,8 +88,11 @@ function CartLayout({ children }) {
 
     const themeClassName = `theme-${businessData.theme.colorPalette}`;
     
+    // Add basePath to the context
+    const contextValue = { businessData, setBusinessData, basePath };
+    
     return (
-        <TemplateContext.Provider value={{ businessData, setBusinessData }}>
+        <TemplateContext.Provider value={contextValue}>
             <div 
               className={`antialiased bg-brand-bg text-brand-text ${themeClassName} font-sans`}
               style={fontVariables}
@@ -154,7 +131,7 @@ function CartLayout({ children }) {
                                 <div className="flex-grow flex flex-col items-center justify-center">
                                     <p className="text-brand-text/70 mt-4 text-center py-8">Your cart is currently empty.</p>
                                     <a 
-                                        href={`/templates/flara/shop`}
+                                        href={`${basePath}/shop`}
                                         onClick={closeCart}
                                         className="w-full text-center inline-block bg-brand-primary text-brand-text px-6 py-3 font-semibold uppercase tracking-wider"
                                     >
@@ -187,7 +164,7 @@ function CartLayout({ children }) {
                                         </div>
                                         <p className="text-xs text-brand-text/60">Shipping & taxes calculated at checkout.</p>
                                         <a 
-                                            href={`/templates/flara/checkout`}
+                                            href={`${basePath}/checkout`}
                                             onClick={closeCart}
                                             className="mt-4 w-full text-center inline-block bg-brand-secondary text-brand-bg px-6 py-3 font-semibold uppercase tracking-wider"
                                         >
@@ -208,10 +185,10 @@ function CartLayout({ children }) {
     );
 }
 
-export default function FlaraLayout({ children }) {
+export default function FlaraLayout({ children, serverData }) {
     return (
         <CartProvider>
-            <CartLayout>{children}</CartLayout>
+            <CartLayout serverData={serverData}>{children}</CartLayout>
         </CartProvider>
     );
 }

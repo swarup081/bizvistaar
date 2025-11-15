@@ -10,12 +10,12 @@ export default function ProductDetailPage() {
     const params = useParams();
     const { productId } = params;
     const { addToCart } = useCart();
-    const { businessData } = useTemplateContext(); // Get data from context
+    
+    // --- THIS IS THE FIX ---
+    const { businessData, basePath } = useTemplateContext(); 
 
-    // Find the product from the master list
     const product = businessData.allProducts.find(p => p.id.toString() === productId);
     
-    // --- DYNAMIC CATEGORY ---
     const category = product 
         ? businessData.categories.find(c => c.id === product.category) 
         : null;
@@ -23,7 +23,6 @@ export default function ProductDetailPage() {
     const [quantity, setQuantity] = useState(1);
     const [selectedImage, setSelectedImage] = useState(product?.image || null);
     
-    // Find related products
     const relatedProducts = product 
         ? businessData.allProducts.filter(p => p.category === product.category && p.id !== product.id).slice(0, 3)
         : [];
@@ -38,7 +37,6 @@ export default function ProductDetailPage() {
 
     return (
         <div className="container mx-auto px-6 py-20">
-            {/* ... (rest of the component JSX remains the same) ... */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
                 {/* Image Gallery */}
                 <div>
@@ -53,7 +51,6 @@ export default function ProductDetailPage() {
                 
                 {/* Product Info */}
                 <div>
-                    {/* Display dynamic category name */}
                     {category && (
                         <span className="text-sm text-brand-text/70 uppercase tracking-wider">{category.name}</span>
                     )}
@@ -87,7 +84,8 @@ export default function ProductDetailPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                      {relatedProducts.map(item => (
                         <div key={item.id} className="group text-left">
-                            <Link href={`/templates/flara/product/${item.id}`} className="block bg-brand-primary overflow-hidden relative aspect-[4/5] h-80">
+                            {/* --- THIS IS THE FIX --- */}
+                            <Link href={`${basePath}/product/${item.id}`} className="block bg-brand-primary overflow-hidden relative aspect-[4/5] h-80">
                                 <img 
                                     src={item.image} 
                                     alt={item.name} 
@@ -96,7 +94,8 @@ export default function ProductDetailPage() {
                             </Link>
                             <div className="mt-4">
                                 <h3 className="text-xl font-serif font-medium text-brand-text">
-                                    <Link href={`/templates/flara/product/${item.id}`} className="hover:text-brand-secondary">{item.name}</Link>
+                                    {/* --- THIS IS THE FIX --- */}
+                                    <Link href={`${basePath}/product/${item.id}`} className="hover:text-brand-secondary">{item.name}</Link>
                                 </h3>
                                 <p className="text-brand-text font-medium text-base mt-1">₹{item.price.toFixed(2)}</p>
                             </div>

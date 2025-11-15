@@ -1,33 +1,25 @@
 'use client';
-// This page is now fully dynamic and uses the new data structure.
-
-import { useTemplateContext } from './templateContext.js'; // Use context
+import { useTemplateContext } from './templateContext.js';
 import { ArrowRightIcon, ShippingIcon, ProductCard } from './components.js';
 import Link from 'next/link';
-import { Editable } from '@/components/editor/Editable'; // --- IMPORT THE NEW COMPONENT ---
+import { Editable } from '@/components/editor/Editable'; 
 
-// Helper: Get product details from the master list by their IDs
-// NOW takes allProducts as an argument
 const getProductsByIds = (allProducts, ids) => {
-    if (!allProducts || !ids) return []; // Guard against undefined data
+    if (!allProducts || !ids) return []; 
     return ids.map(id => allProducts.find(p => p.id === id)).filter(Boolean);
 };
 
 export default function CandleaPage() {
     
-    // Get businessData from the context
-    const { businessData } = useTemplateContext();
+    const { businessData, basePath } = useTemplateContext();
 
-    // Guard against undefined properties during initial render or data mismatch
     const allProducts = businessData?.allProducts || [];
     const collectionItemIDs = businessData?.collection?.itemIDs || [];
     const bestSellerItemIDs = businessData?.bestSellers?.itemIDs || [];
     
-    // Get the actual product objects for each section
     const collectionProducts = getProductsByIds(allProducts, collectionItemIDs);
     const bestSellerProducts = getProductsByIds(allProducts, bestSellerItemIDs);
 
-    // Render null or a loading state if core data is missing
     if (!businessData || !businessData.hero) {
         return <div>Loading preview...</div>; 
     }
@@ -37,13 +29,12 @@ export default function CandleaPage() {
             {/* --- Hero Section --- */}
             <section id="home" className="container mx-auto px-6 py-20 md:py-32">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                    {/* --- WRAP ELEMENTS WITH <Editable> --- */}
                     <Editable focusId="hero">
                         <div className="flex flex-col gap-6 md:pr-10 text-center md:text-left items-center md:items-start">
                             <h1 className="text-5xl md:text-7xl font-bold text-brand-text leading-tight font-serif">{businessData.hero.title}</h1>
                             <p className="text-lg text-brand-text opacity-70 max-w-md">{businessData.hero.subtitle}</p>
                        <Link 
-                            href="/templates/flara/shop"
+                            href={`${basePath}/shop`}
                             className="mt-4 inline-flex items-center gap-3 btn btn-secondary px-8 py-3 text-base font-medium tracking-wider uppercase border border-brand-secondary text-brand-text hover:bg-brand-secondary hover:text-brand-bg transition-all duration-300"
                         >
                             <span>{businessData.hero.cta}</span>
@@ -62,12 +53,10 @@ export default function CandleaPage() {
                             </div>
                         </div>
                     </Editable>
-                    {/* --- END OF WRAPPING --- */}
                 </div>
             </section>
             
             {/* --- Info Bar --- */}
-            {/* --- WRAPPED WITH EDITABLE --- */}
             <Editable focusId="global">
                 <section className="py-6 bg-brand-bg border-y border-brand-primary/20 overflow-hidden">
                     <div className="flex whitespace-nowrap">
@@ -88,7 +77,6 @@ export default function CandleaPage() {
                     </div>
                 </section>
             </Editable>
-            {/* --- END OF WRAP --- */}
 
             {/* --- Feature Section 1 --- */}
             <Editable focusId="about">
@@ -123,7 +111,7 @@ export default function CandleaPage() {
                     <div className="container mx-auto px-6">
                         <div className="flex justify-between items-center mb-12">
                             <h2 className="text-4xl font-bold text-brand-text font-serif">{businessData.collection.title}</h2>
-                            <Link href="/templates/flara/shop" className="inline-flex items-center gap-2 font-semibold text-brand-text hover:text-brand-bg border border-brand-text hover:bg-brand-secondary transition-all duration-300 px-4 py-2 ">
+                            <Link href={`${basePath}/shop`} className="inline-flex items-center gap-2 font-semibold text-brand-text hover:text-brand-bg border border-brand-text hover:bg-brand-secondary transition-all duration-300 px-4 py-2 ">
                                 <span>See All</span>
                                 <ArrowRightIcon />
                             </Link>
@@ -131,7 +119,7 @@ export default function CandleaPage() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {collectionProducts.map(item => (
                                 <Link 
-                                href={`/templates/flara/product/${item.id}`}
+                                href={`${basePath}/product/${item.id}`}
                                 key={item.id} 
                                 className="group relative block overflow-hidden shadow-lg aspect-[4/5] hover:rounded-t-full"
                                 >
@@ -169,7 +157,7 @@ export default function CandleaPage() {
                             ))}
                         </div>
                         <Link 
-                            href="/templates/flara/shop"
+                            href={`${basePath}/shop`}
                             className="mt-16 inline-flex items-center gap-2 font-semibold text-brand-text hover:text-brand-bg border border-brand-text hover:bg-brand-secondary transition-all duration-300 px-6 py-3 "
                         >
                             <span>Shop Now</span>
@@ -179,7 +167,7 @@ export default function CandleaPage() {
                 </Editable>
             </section>
 
-            {/* --- Feature Section 2 (RE-ADDED) --- */}
+            {/* --- Feature Section 2 --- */}
             <Editable focusId="feature2">
                 <section id="feature2" className="py-24 overflow-hidden bg-brand-bg">
                     <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-16 md:items-end">

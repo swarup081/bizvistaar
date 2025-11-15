@@ -7,8 +7,8 @@ import { CartProvider, useCart } from './cartContext.js';
 import { TemplateContext } from './templateContext.js';
 import { Editable } from '@/components/editor/Editable';
 
-function CartLayout({ children }) {
-    const [businessData, setBusinessData] = useState(initialBusinessData); 
+function CartLayout({ children, serverData }) { // 1. Accept serverData
+    const [businessData, setBusinessData] = useState(serverData || initialBusinessData); // 2. Use serverData
     const router = useRouter();
     
     const { 
@@ -27,6 +27,8 @@ function CartLayout({ children }) {
     } = useCart();
 
     useEffect(() => {
+        if (serverData) return; // 3. Add this line
+
         // --- THEME LOGIC ---
         document.body.classList.forEach(className => {
             if (className.startsWith('theme-')) {
@@ -95,7 +97,7 @@ function CartLayout({ children }) {
         return () => {
             document.body.classList.remove(`theme-${businessData.theme.colorPalette}`);
         };
-    }, [businessData.theme.colorPalette, router]);
+    }, [businessData.theme.colorPalette, router, serverData]); // 4. Add serverData
 
     const createFontVariable = (fontName) => {
         if (!fontName) return '';
@@ -207,10 +209,12 @@ function CartLayout({ children }) {
     );
 }
 
-export default function AvenixLayout({ children }) {
+// 5. Accept serverData
+export default function AvenixLayout({ children, serverData }) {
     return (
         <CartProvider>
-            <CartLayout>{children}</CartLayout>
+            {/* 6. Pass serverData down */}
+            <CartLayout serverData={serverData}>{children}</CartLayout>
         </CartProvider>
     );
 }

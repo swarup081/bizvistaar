@@ -7,8 +7,8 @@ import { CartProvider, useCart } from './cartContext.js';
 import { TemplateContext } from './templateContext.js';
 import { Editable } from '@/components/editor/Editable';
 
-function FlavorNestLayout({ children }) {
-    const [businessData, setBusinessData] = useState(initialBusinessData); 
+function FlavorNestLayout({ children, serverData }) { // 1. Accept serverData
+    const [businessData, setBusinessData] = useState(serverData || initialBusinessData); // 2. Use serverData
     const router = useRouter();
     
     const { 
@@ -27,6 +27,8 @@ function FlavorNestLayout({ children }) {
     } = useCart();
 
     useEffect(() => {
+        if (serverData) return; // 3. Add this line
+
         document.body.style.fontFamily = `'${businessData.theme.font.body}', sans-serif`;
         const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
         headings.forEach(heading => {
@@ -107,7 +109,7 @@ function FlavorNestLayout({ children }) {
             document.body.style.fontFamily = '';
             document.body.classList.remove(`theme-${businessData.theme.colorPalette}`);
         };
-    }, [businessData.theme.font.body, businessData.theme.font.heading, businessData.theme.colorPalette, router]);
+    }, [businessData.theme.font.body, businessData.theme.font.heading, businessData.theme.colorPalette, router, serverData]); // 4. Add serverData
 
     const createFontVariable = (fontName) => `var(--font-${fontName.toLowerCase().replace(' ', '-')})`;
     
@@ -220,10 +222,12 @@ function FlavorNestLayout({ children }) {
     );
 }
 
-export default function RootLayout({ children }) {
+// 5. Accept serverData
+export default function RootLayout({ children, serverData }) {
     return (
         <CartProvider>
-            <FlavorNestLayout>{children}</FlavorNestLayout>
+            {/* 6. Pass serverData down */}
+            <FlavorNestLayout serverData={serverData}>{children}</FlavorNestLayout>
         </CartProvider>
     );
 }
