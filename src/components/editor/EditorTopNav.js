@@ -148,7 +148,7 @@ export default function EditorTopNav({
   const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
   
   const currentPageName = pages.find(p => p.path === activePage)?.name || 'Home';
-  const siteUrl = `your-site-slug.bizvistar.com`; // Placeholder URL
+  const siteUrl = `your-site-slug.bizvistaar.com`; // Placeholder URL
 
   const handlePageSelect = (path) => {
     onPageChange(path);
@@ -168,7 +168,7 @@ export default function EditorTopNav({
         <div className="flex items-center gap-6">
           <Link href="/">
             <span className="text-xl font-bold text-gray-900 cursor-pointer">
-              BizVistar
+              BizVistaar
             </span>
           </Link>
           <div className="flex items-center gap-2">

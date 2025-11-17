@@ -22,7 +22,7 @@ export default function PricingLayout({ children }) {
               <CheckIcon /> Custom domain
             </span>
             <span className="hidden md:flex items-center gap-2 text-sm text-gray-700">
-              <CheckIcon /> No BizVistar branding
+              <CheckIcon /> No BizVistaar branding
             </span>
             <span className="hidden lg:flex items-center gap-2 text-sm text-gray-700">
               <CheckIcon /> 24/7 customer care

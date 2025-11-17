@@ -276,18 +276,18 @@ export default function StepOne() {
     const templatePairs = [
         [
             { variant: 'split' }, 
-            { variant: 'ecommerce' }
+            { variant: 'minimal' }
         ],
         [
-            { variant: 'centered' }, 
+            { variant: 'portfolio' }, 
+            { variant: 'centered' }
+        ],
+        [
+            { variant: 'ecommerce' },
             { variant: 'feature' }
         ],
         [
             { variant: 'blog' },
-            { variant: 'minimal' }
-        ],
-        [
-            { variant: 'portfolio' },
             { variant: 'grid' }
         ]
     ];
@@ -318,11 +318,11 @@ export default function StepOne() {
     return (
         <div className="flex h-screen font-sans overflow-hidden">
             
-            {/* --- LEFT SIDE (Unchanged) --- */}
+            {/* --- LEFT SIDE --- */}
             <div className="w-1/2 flex flex-col justify-between p-16 bg-white z-20 shadow-[10px_0_30px_rgba(0,0,0,0.02)] relative">
                 
                 <div className="absolute top-10 left-10 text-3xl font-bold text-gray-900 not-italic tracking-tight">
-                    BizVistar
+                    BizVistaar
                 </div>
 
                 <div className="flex flex-col justify-center h-full">
@@ -389,22 +389,22 @@ export default function StepOne() {
                 
                 <div>
                     <Link href="/">
-                        <button className="text-gray-600 hover:text-gray-900 font-medium text-sm flex items-center gap-1">
-                             Back
+                        <button className="text-gray-600 hover:text-gray-900 font-medium text-m flex items-center gap-1">
+                        ← Back
                         </button>
                     </Link>
                 </div>
             </div>
 
-            {/* --- RIGHT SIDE (Enhanced with text and arrow) --- */}
+            {/* --- RIGHT SIDE (Enhanced) --- */}
             <div className="w-1/2 bg-gray-50 relative overflow-hidden flex items-center justify-center">
                 {/* 1. Background Grid */}
                 <div className="absolute inset-0 z-0 pointer-events-none opacity-60">
                    <GridBackgroundDemo />
                 </div>
 
-                {/* 2. Floating Templates Container */}
-                <div className="relative z-10 w-[900px] h-[650px] flex items-center justify-center">
+                {/* 2. Floating Templates Container (Moved up to make space for text) */}
+                <div className="relative z-10 w-[900px] h-[650px] flex items-center justify-center -mt-20">
                     <AnimatePresence>
                         <motion.div
                             key={activePairIndex}
@@ -414,34 +414,58 @@ export default function StepOne() {
                             exit="exit"
                             className="absolute inset-0 w-full h-full"
                         >
-                            {/* Card 1 */}
+                            {/* Card 1 - Left */}
                             <MockBrowser 
                                 variant={templatePairs[activePairIndex][0].variant}
-                                className="top-[5%] left-[8%] w-[300px] h-[420px] z-20 hover:z-30 shadow-2xl"
+                                className="top-[10%] left-[8%] w-[300px] h-[420px] z-20 hover:z-30 shadow-2xl"
                             />
 
-                            {/* Card 2 */}
+                            {/* Card 2 - Right */}
                             <MockBrowser 
                                 variant={templatePairs[activePairIndex][1].variant}
-                                className="top-[10%] right-[8%] w-[300px] h-[420px] z-20 hover:z-30 shadow-2xl"
+                                className="top-[15%] right-[8%] w-[300px] h-[420px] z-20 hover:z-30 shadow-2xl"
                             />
                         </motion.div>
                     </AnimatePresence>
                     
                     {/* Decorative Blob */}
                     <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-blue-200/20 rounded-full blur-[80px] z-0 pointer-events-none"></div>
-
-                    {/* Curved Arrow and Text */}
-                    <div className="absolute bottom-[-1%] left-[50%] translate-x-[-110%] w-[350px] text-gray-700 text-sm leading-relaxed z-30">
-                    <svg className="absolute -top-12 left-10 w-24 h-24 text-gray-300" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M 40 50 Q 60 85 90 65" stroke="currentColor" strokeWidth="2" fill="none" />
-    <path d="M 90 65 L 80 60 M 90 65 L 82 75" stroke="currentColor" strokeWidth="2" fill="none" />
-</svg>
-                        <p className="relative pl-46 pt-2">
-                            **Tell us what you're building, and we'll craft your perfect digital presence!**
-                        </p>
-                    </div>
                 </div>
+
+                 {/* 3. Bottom Text and Arrow Area - Positioned EXACTLY like screenshot */}
+                 <div className="absolute bottom-20 left-12 max-w-xl z-30 flex items-start gap-0">
+                    {/* Hand-drawn Arrow SVG */}
+                    <svg 
+                        className="flex-shrink-0 w-20 h-20 text-black transform translate-y-1" 
+                        viewBox="0 0 100 100" 
+                        fill="none" 
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        {/* Curved "Elbow" Path: 
+                           Starts top-left, curves down, then turns sharply right to point at text.
+                        */}
+                        <path 
+                            d="M 25 15 Q 25 55 75 60" 
+                            stroke="currentColor" 
+                            strokeWidth="2.5" 
+                            strokeLinecap="round" 
+                            fill="none" 
+                        />
+                        {/* Arrow Head pointing right */}
+                        <path 
+                            d="M 65 50 L 80 60 L 65 70" 
+                            stroke="currentColor" 
+                            strokeWidth="2.5" 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            fill="none" 
+                        />
+                    </svg>
+
+                    <p className="text-gray-900 font-normal text-m leading-snug mt-10">
+                        We&apos;re ready to build your website, from Instagram DM sellers to local shops and service businesses. Just add your details, and we&apos;ll make sure you look amazing online without the tech stress.
+                    </p>
+                    </div>
             </div>
         </div>
     );

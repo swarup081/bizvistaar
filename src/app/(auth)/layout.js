@@ -15,7 +15,7 @@ export default function AuthLayout({ children }) {
         <div className="relative z-10 flex flex-col items-center text-center">
             <Link href="/">
                 <span className="text-3xl font-bold text-gray-900 cursor-pointer">
-                    BizVistar
+                    BizVistaar
                 </span>
             </Link>
             <p className="text-xl text-gray-600 mt-4 max-w-sm">

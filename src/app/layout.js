@@ -46,7 +46,7 @@ const dmSans = DM_Sans({
 // --- END FONT DEFINITIONS ---
 
 export const metadata = {
-  title: "BizVistar",
+  title: "BizVistaar",
   description: "Empowering Local Businesses",
 };
 
