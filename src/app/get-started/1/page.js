@@ -80,20 +80,19 @@ const MockBrowser = ({ storeName, className }) => {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className={`absolute bg-white rounded-tl-[2.5rem] shadow-[0_20px_80px_-20px_rgba(0,0,0,0.12)] border-l border-t border-gray-200/60 flex flex-col ${className}`}
+            className={`absolute bg-white rounded-tl-[2.5rem] shadow-[0_20px_80px_-20px_rgba(0,0,0,0.32)] border-l border-t border-gray-200/60 flex flex-col ${className}`}
         >
             {/* --- Vertical Process Flow (Left Side) --- */}
-            <div className="absolute -left-[180px] top-[200px] z-50 flex flex-col items-center w-[280px]">
+            <div className="absolute -left-[150px] top-[320px] z-50 flex flex-col items-center w-[280px]">
                 
                 {/* Card 1: Subdomain */}
                 <motion.div 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="bg-white p-5 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-200 w-full flex flex-col justify-center min-h-[110px]"
+                    className="bg-white p-5 rounded-lg shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-200 max-w-[255px] flex flex-col justify-center  min-h-[55px]"
                 >
-                     <span className="text-sm font-bold text-slate-900">Subdomain Ready</span>
-                     <span className="text-[12px] font-medium text-slate-700">{siteSlug}.bizvistaar.com</span>
+                     <span className="text-sm font-bold text-slate-900">Crafting your brand identity </span>
                 </motion.div>
 
                 {/* Connector Line 1 */}
@@ -101,7 +100,7 @@ const MockBrowser = ({ storeName, className }) => {
                     initial={{ height: 0 }}
                     animate={{ height: 24 }}
                     transition={{ delay: 0.6, duration: 0.3 }}
-                    className="w-[2px] bg-slate-200"
+                    className="w-[3px] bg-slate-600"
                 ></motion.div>
 
                 {/* Middle Pill: AI Process */}
@@ -109,17 +108,17 @@ const MockBrowser = ({ storeName, className }) => {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.7 }}
-                    className="bg-white p-4 rounded-xl shadow-[0_6px_24px_rgba(0,0,0,0.05)] border border-slate-200 w-full flex flex-col justify-center min-h-[85px]"
+                    className="bg-white p-4 rounded-lg shadow-[0_6px_24px_rgba(0,0,0,0.05)] border border-slate-200 max-w-[105px] flex flex-col justify-center min-h-[55px]"
                 >
-                    <span className="text-sm font-semibold text-slate-900">Auto‑crafting your brand identity & logo</span>
-                </motion.div>
+                     <span className="text-sm font-bold text-slate-900">Subdomain</span>
+                     </motion.div>
 
                 {/* Connector Line 2 */}
                 <motion.div 
                     initial={{ height: 0 }}
                     animate={{ height: 24 }}
                     transition={{ delay: 0.8, duration: 0.3 }}
-                    className="w-[2px] bg-slate-200"
+                    className="w-[3px] bg-slate-600"
                 ></motion.div>
 
                 {/* Card 3: Brand Identity */}
@@ -127,10 +126,9 @@ const MockBrowser = ({ storeName, className }) => {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.9 }}
-                    className="bg-white p-5 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-200 w-full flex flex-col justify-center min-h-[110px]"
+                    className="bg-white p-5 rounded-lg shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-slate-200 max-w-[255px] flex flex-col justify-center  min-h-[55px]"
                 >
-                     <span className="text-sm font-bold text-slate-900">Infusing Brand Identity</span>
-                     <span className="text-[12px] font-medium text-slate-700">{storeName || 'Your Brand'}</span>
+                     <span className="text-sm font-bold text-slate-900">Infusing your Brand Identity</span>
                 </motion.div>
 
             </div>
@@ -145,10 +143,10 @@ const MockBrowser = ({ storeName, className }) => {
                 </div>
                 
                 {/* URL Bar */}
-                <div className="flex-grow h-10 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center px-4 justify-start gap-3 relative transition-colors duration-300 group">
+                <div className="flex-grow h-10 bg-slate-50 border border-slate-200/60 rounded-3xl flex items-center px-4 justify-start gap-3 relative transition-colors duration-300 group">
                      <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                      <span className="text-sm text-slate-500 font-medium truncate font-sans tracking-wide group-hover:text-slate-900 transition-colors">
-                        {siteSlug}.bizvistaar.com
+                        <span className="text-slate-600 font-bold">{siteSlug}</span>.bizvistaar.com
                      </span>
                 </div>
             </div>
