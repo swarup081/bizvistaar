@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { GridBackgroundDemo } from "@/components/GridBackgroundDemo";
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, MapPin, Calendar, ShoppingBag, Check } from 'lucide-react';
+import { Star, MapPin, Calendar, ShoppingBag, Tags, Menu } from 'lucide-react'; // Menu added for versatility
 
 // --- Shared Styles & Logic (Consistent with Step 2) ---
 const stylesMap = {
@@ -30,201 +30,293 @@ const getThemeLogic = (selectedVibes, activeVibe) => {
   
   let mixedColors = [...stylesMap.default.colors];
   if (activeKeys.length >= 1) {
-     // Simple logic: use the first selected vibe's colors for consistency
      const primaryStyle = stylesMap[activeKeys[0]] || stylesMap.default;
      mixedColors = [...primaryStyle.colors];
   }
   return { mixedColors };
 };
 
-// --- VISUAL COMPONENT 1: Order Confirmation (The requested text) ---
-const OrderVisual = ({ colors }) => (
+// --- BASE CARD TEMPLATE (Enforces uniform size/position and clean UI) ---
+const BaseCard = ({ colors, title, subtitle, mainContent }) => (
   <motion.div
-    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-    transition={{ duration: 0.4 }}
-    className="w-[260px] bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100"
-  >
-    <div className="px-5 py-4 border-b border-slate-50" style={{ backgroundColor: colors[0] }}>
-        <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: colors[2] }}>
-            Subject: <span className="font-normal normal-case opacity-70">Order confirmation</span>
-        </p>
-    </div>
-    <div className="p-6 text-center flex flex-col items-center bg-[#1a1a1a]">
-        <h3 className="text-white font-medium text-sm mb-2">Your order is confirmed!</h3>
-        <p className="text-[10px] text-gray-400 leading-relaxed mb-5 px-2">
-            We&apos;ll let you know as soon as it&apos;s on its way
-        </p>
-        <div className="w-full aspect-[4/3] rounded-lg overflow-hidden relative bg-gray-800">
-             <img 
-                src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80" 
-                alt="Product" 
-                className="absolute inset-0 w-full h-full object-cover opacity-90"
-            />
-        </div>
-    </div>
-  </motion.div>
-);
-
-// --- VISUAL COMPONENT 2: Reviews ---
-const ReviewVisual = ({ colors }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-    className="w-[260px] bg-white rounded-2xl shadow-xl p-6 border border-slate-100 relative overflow-hidden"
-  >
-      <div className="flex gap-1 mb-3">
-          {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 fill-current text-yellow-400" />)}
-      </div>
-      <h3 className="font-bold text-lg mb-1" style={{ color: colors[2] }}>Amazing Service!</h3>
-      <p className="text-xs text-gray-500 leading-relaxed mb-4">
-          "I absolutely love the quality and the attention to detail. Will definitely be coming back for more!"
-      </p>
-      <div className="flex items-center gap-3 border-t border-gray-100 pt-4">
-          <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
-               <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="User" className="w-full h-full object-cover" />
-          </div>
-          <div>
-              <p className="text-xs font-bold text-gray-900">Sarah Jenkins</p>
-              <p className="text-[10px] text-gray-400">Verified Customer</p>
-          </div>
-      </div>
-      {/* Decorative splash */}
-      <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full opacity-20" style={{ backgroundColor: colors[2] }}></div>
-  </motion.div>
-);
-
-// --- VISUAL COMPONENT 3: Inventory / Dashboard ---
-const InventoryVisual = ({ colors }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-    className="w-[260px] bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100"
-  >
-      <div className="px-5 py-3 border-b border-slate-100 flex justify-between items-center">
-          <span className="text-xs font-bold text-gray-900">Stock Status</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Live</span>
-      </div>
-      <div className="p-2">
-          {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                  <div className="w-10 h-10 rounded bg-gray-100 overflow-hidden flex-shrink-0">
-                    <img src={`https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=100&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fHByb2R1Y3R8ZW58MHx8MHx8fDA%3D&w=${100+i}`} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-grow min-w-0">
-                      <div className="h-2 w-20 bg-gray-200 rounded mb-1.5"></div>
-                      <div className="h-1.5 w-12 bg-gray-100 rounded"></div>
-                  </div>
-                  <div className="text-right">
-                      <span className="text-xs font-bold" style={{ color: colors[2] }}>{12 * i}</span>
-                      <p className="text-[8px] text-gray-400">left</p>
-                  </div>
-              </div>
-          ))}
-      </div>
-  </motion.div>
-);
-
-// --- VISUAL COMPONENT 4: Menu / List ---
-const MenuVisual = ({ colors }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-    className="w-[250px] bg-white rounded-2xl shadow-xl p-5 border border-slate-100 relative"
-  >
-      <div className="text-center mb-4">
-          <h3 className="font-serif italic text-xl text-gray-900">Menu</h3>
-          <div className="h-0.5 w-8 bg-gray-200 mx-auto mt-1"></div>
-      </div>
-      <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-              <div key={i} className="flex justify-between items-baseline border-b border-dashed border-gray-100 pb-2">
-                  <div>
-                      <p className="text-xs font-bold text-gray-800">Artisan Item {i}</p>
-                      <p className="text-[9px] text-gray-400">Fresh ingredients, handmade</p>
-                  </div>
-                  <span className="text-xs font-medium" style={{ color: colors[2] }}>${8 + i * 2}</span>
-              </div>
-          ))}
-      </div>
-      {/* Floating QR Code */}
-      <div className="absolute bottom-3 right-3 w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center shadow-lg">
-          <div className="w-6 h-6 border-2 border-white rounded-sm flex items-center justify-center">
-              <div className="w-2 h-2 bg-white"></div>
-          </div>
-      </div>
-  </motion.div>
-);
-
-// --- VISUAL COMPONENT 5: Booking ---
-const BookingVisual = ({ colors }) => (
-    <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10, scale: 0.95 }}
-      className="w-[250px] bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100"
-    >
-        <div className="bg-gray-900 p-4 text-center">
-             <h3 className="text-white text-sm font-medium">Appointment Confirmed</h3>
-             <div className="mt-3 w-12 h-12 rounded-full bg-green-500 mx-auto flex items-center justify-center">
-                 <Check className="w-6 h-6 text-white" />
-             </div>
-        </div>
-        <div className="p-5 space-y-3">
-             <div className="flex items-center gap-3 text-sm text-gray-600">
-                 <Calendar className="w-4 h-4" />
-                 <span>Fri, Nov 24 • 10:00 AM</span>
-             </div>
-             <div className="flex items-center gap-3 text-sm text-gray-600">
-                 <MapPin className="w-4 h-4" />
-                 <span>Main Street Studio</span>
-             </div>
-             <button 
-                className="w-full mt-2 py-2 rounded-lg text-xs font-bold text-white transition-opacity hover:opacity-90"
-                style={{ backgroundColor: colors[2] }}
-             >
-                 Add to Calendar
-             </button>
-        </div>
-    </motion.div>
-  );
+      transition={{ duration: 0.4 }}
+      className="w-[260px] bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100 h-[320px] flex flex-col" 
+  >
+      {/* Header - Fixed to original style */}
+      <div className="px-5 py-4 border-b border-slate-100 flex-shrink-0 " style={{ backgroundColor: colors[1] }}>
+          <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: colors[2] }}>
+              SUBJECT: <span className="font-normal normal-case opacity-70">{title}</span>
+          </p>
+      </div>
+      {/* Content Body - Uses main background color, ensuring uniformity and cleanliness */}
+      <div className="p-5 text-center flex flex-col items-center flex-grow" style={{ backgroundColor: colors[0], color: colors[2], minHeight: '230px' }}>
+          {/* NEW: Use a distinct font for subtitle, like a bold sans-serif */}
+          <h3 className="text-gray-900 font-bold text-sm mb-2 tracking-wide not-italic">{subtitle}</h3> 
+          {/* Content Wrapper to hold elements and use remaining space */}
+          <div className="flex-grow w-full flex flex-col items-center justify-center">
+              {mainContent}
+          </div>
+      </div>
+  </motion.div>
+);
 
-// --- Dynamic Overlay Manager ---
-const DynamicVisualOverlay = ({ featureId, colors }) => {
-    // Determine which visual to show based on the feature ID
-    const getVisual = () => {
-        // Order/Store related
-        if (['delivery', 'shipping', 'store', 'products', 'dropshipping', 'pod', 'payments', 'discounts', 'default'].includes(featureId)) {
-            return <OrderVisual colors={colors} />;
+
+// --- VISUAL COMPONENT 1: Order Confirmation (UI Improved) ---
+const OrderVisualComp = ({ colors }) => (
+<BaseCard
+  colors={colors}
+  title="Order confirmation"
+  subtitle="Order Confirmed! Preparing Delivery"
+  mainContent={(
+      <>
+          <p className="text-[10px] text-gray-500 leading-relaxed mb-4 px-2">
+              Order is confirmed and successfully paid.
+          </p>
+          {/* Main Content Block (Order Summary) */}
+          <div className="w-full p-3 rounded-lg text-left text-gray-900 border" style={{ backgroundColor: colors[1], borderColor: colors[2], opacity: 0.2 }}>
+              
+              {/* Simulated Header Row */}
+              <div className="flex justify-between items-center py-1 border-b border-white/60">
+                  <div className="h-3 w-16 bg-white rounded-full font-bold text-xs"></div>
+                  <div className="h-3 w-8" style={{ backgroundColor: colors[2], opacity: 0.4 }}></div>
+              </div>
+              {/* Simulated Item 1 */}
+              <div className="flex justify-between items-center py-1 border-b border-white/60">
+                  <div className="h-3 w-12 bg-white rounded-full text-xs"></div>
+                  <div className="h-3 w-8" style={{ backgroundColor: colors[2], opacity: 0.4 }}></div>
+              </div>
+              {/* Simulated Total - Higher contrast bar */}
+              <div className="flex justify-between items-center pt-3 mt-2 font-bold border-t border-white/80">
+                  <span className="text-xs">Total</span>
+                  <div className="ml-auto h-2 w-1/5 rounded-full" style={{ backgroundColor: colors[2], opacity: 0.6 }}></div>
+                  </div>
+          </div>
+          {/* Delivery Status Bar - Cleaner, higher contrast status text */}
+          <div className="h-8 w-full mt-3 rounded-md flex items-center px-3 font-medium text-xs border" style={{ backgroundColor: colors[0], borderColor: colors[2], opacity: 0.2 }}>
+              <span className="text-xs" style={{ color: colors[2], opacity: 0.8 }}>Status: In Progress</span>
+              <div className="ml-auto h-2 w-1/4 rounded-full" style={{ backgroundColor: colors[2], opacity: 0.6 }}></div>
+          </div>
+      </>
+  )}
+/>
+);
+
+// --- VISUAL COMPONENT 2: Reviews ---
+const ReviewVisualComp = ({ colors }) => (
+<BaseCard
+  colors={colors}
+  title="New Customer Review"
+  subtitle="You received a 5-Star Review"
+  mainContent={(
+      <>
+          <p className="text-[10px] text-gray-500 leading-relaxed mb-4 px-2">
+              "I absolutely love the quality and the attention to detail."
+          </p>
+          <div className="w-full text-left p-4 rounded-lg shadow-inner" style={{ backgroundColor: colors[1] }}>
+              <div className="flex gap-0.5 mb-3 justify-items-start">
+                  {[1,2,3,4,5].map(i => <Star key={i} className="w-3 h-3 fill-current text-yellow-500" />)}
+              </div>
+              {/* Text placeholders */}
+              <div className="h-3 w-full bg-white rounded-full mb-1.5"></div>
+              <div className="h-3 w-3/4 bg-white rounded-full"></div>
+              
+              <div className="flex items-center gap-2 mt-4 pt-2 border-t border-white/40">
+                  <div className="w-6 h-6 rounded-full" style={{ backgroundColor: colors[2], opacity: 0.8 }}></div>
+                  <div className="h-2 w-16 bg-white rounded-full"></div>
+              </div>
+          </div>
+      </>
+  )}
+/>
+);
+
+// --- VISUAL COMPONENT 3: Inventory / Dashboard ---
+const InventoryVisualComp = ({ colors }) => (
+<BaseCard
+  colors={colors}
+  title="Low Stock Alert"
+  subtitle="Check inventory for quick action"
+  mainContent={(
+      <>
+          <p className="text-[10px] text-gray-500 leading-relaxed mb-4 px-2">
+              Product stock levels require immediate attention.
+          </p>
+          <div className="w-full p-3 rounded-lg shadow-inner" style={{ backgroundColor: colors[1] }}>
+              {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-3 p-1.5 hover:opacity-80 transition-colors">
+                      <div className="w-8 h-8 rounded flex-shrink-0" style={{ backgroundColor: colors[2], opacity: 0.3 }}></div> 
+                      <div className="flex-grow min-w-0 text-left">
+                          <div className="h-2 w-20 bg-white rounded mb-1"></div>
+                          <div className="h-1.5 w-12 bg-white/70 rounded"></div>
+                      </div>
+                      <div className="text-right">
+                          <span className="text-xs font-bold" style={{ color: colors[2] }}>{12 * i}</span> 
+                          <p className="text-[8px] text-gray-500">units</p>
+                      </div>
+                  </div>
+              ))}
+              <div className="h-6 w-full rounded-md mt-2" style={{ backgroundColor: colors[2], opacity: 0.1 }}></div>
+          </div>
+      </>
+  )}
+/>
+);
+
+// --- VISUAL COMPONENT 4: Menu / List (Generic Text) ---
+const MenuVisualComp = ({ colors }) => (
+<BaseCard
+  colors={colors}
+  title="Digital Menu Preview"
+  subtitle="Explore our featured list"
+  mainContent={(
+      <>
+          <p className="text-[10px] text-gray-500 leading-relaxed mb-4 px-2">
+              Digital list of available items or services for customers.
+          </p>
+          <div className="w-full p-4 rounded-lg shadow-inner" style={{ backgroundColor: colors[1] }}>
+               <Menu className="w-8 h-8 mx-auto mb-3" style={{ color: colors[2], opacity: 0.8 }} />
+              <div className="space-y-1 text-left">
+                  {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex justify-between items-center py-1 border-b border-white/40 last:border-b-0">
+                          <div>
+                              {/* Generic placeholders for item details */}
+                              <div className="h-3 w-24 font-bold bg-white rounded-full"></div> 
+                              <div className="h-2 w-16 text-[9px] bg-white/70 rounded-full mt-0.5"></div>
+                          </div>
+                          <span className="text-sm font-medium" style={{ color: colors[2] }}>{7 + i * 2}.00</span>
+                      </div>
+                  ))}
+              </div>
+          </div>
+      </>
+  )}
+/>
+);
+
+// --- VISUAL COMPONENT 5: Booking (UI Improved, No Checkmark) ---
+const BookingVisualComp = ({ colors }) => (
+<BaseCard
+  colors={colors}
+  title="Appointment Details"
+  subtitle="Details Confirmed"
+  mainContent={(
+      <>
+          {/* Cleaner, softer status circle/icon placeholder */}
+          <div className="mt-2 w-12 h-12 rounded-full mx-auto flex items-center justify-center border-4" style={{ borderColor: colors[2], opacity: 0.2 }}>
+               <Calendar className="w-6 h-6" style={{ color: colors[2], opacity: 0.8 }} />
+          </div>
+          
+          {/* Main Content Block */}
+          <div className="w-full p-4 mt-4 rounded-lg text-left text-gray-900 space-y-3" style={{ backgroundColor: colors[1] }}>
+               
+               {/* Simulated Name/Service - Service Title */}
+               <div className="flex items-center gap-3 text-sm border-b border-white/50 pb-2">
+                   <span className="text-xs text-gray-600">Service:</span>
+                   <div className="h-3 w-3/5 rounded-full bg-white font-bold"></div>
+               </div>
+
+               {/* Date/Time */}
+               <div className="flex items-center gap-3 text-sm">
+                   <Calendar className="w-4 h-4" style={{ color: colors[2], opacity: 0.8 }} />
+                   <div className="h-3 w-32 rounded-full bg-white"></div>
+               </div>
+               {/* Address */}
+               <div className="flex items-center gap-3 text-sm">
+                   <MapPin className="w-4 h-4" style={{ color: colors[2], opacity: 0.8 }} />
+                   <div className="h-3 w-24 rounded-full bg-white"></div>
+               </div>
+               {/* Action button placeholder */}
+               <div className="h-8 w-full mt-3 rounded-md" style={{ backgroundColor: colors[2], opacity: 0.2 }}></div>
+          </div>
+      </>
+  )}
+/>
+);
+
+// --- VISUAL COMPONENT 6: Promo Code ---
+const PromoVisualComp = ({ colors }) => (
+<BaseCard
+  colors={colors}
+  title="Active Promotion"
+  subtitle="Save on your next purchase"
+  mainContent={(
+      <>
+          <p className="text-[10px] text-gray-500 leading-relaxed mb-4 px-2">
+              Automatically apply your promotion at checkout.
+          </p>
+          <div className="w-full p-4 rounded-lg shadow-inner" style={{ backgroundColor: colors[1] }}>
+               <Tags className="w-8 h-8 mx-auto" style={{ color: colors[2], opacity: 0.8 }} />
+              <div className="text-center mt-3">
+                  <h4 className="text-3xl font-bold mb-1 font-serif">CODE15</h4>
+                  <p className="text-xs text-gray-600">Use this code for 15% off</p>
+              </div>
+              <div className="h-10 w-full rounded-md mt-3" style={{ backgroundColor: colors[2], opacity: 0.2 }}></div>
+          </div>
+      </>
+  )}
+/>
+);
+
+
+// List of features to cycle through
+const CYCLE_FEATURES = [
+  'delivery', 
+  'reviews', 
+  'inventory', 
+  'menu', 
+  'booking', 
+  'discounts'
+];
+
+// --- Dynamic Overlay Manager (Now a self-cycling carousel) ---
+const DynamicVisualOverlay = ({ colors }) => {
+    const [cycleIndex, setCycleIndex] = useState(0);
+    const featureId = CYCLE_FEATURES[cycleIndex];
+
+    // Auto-cycle logic
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCycleIndex(prevIndex => (prevIndex + 1) % CYCLE_FEATURES.length);
+        }, 3000); // Change every 3 seconds
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const getVisual = (id) => {
+        switch (id) {
+            case 'delivery':
+            case 'store':
+            case 'products':
+            case 'payments':
+                return <OrderVisualComp colors={colors} />;
+            case 'reviews':
+            case 'testimonials':
+                return <ReviewVisualComp colors={colors} />;
+            case 'inventory':
+                return <InventoryVisualComp colors={colors} />;
+            case 'menu':
+            case 'gallery':
+            case 'portfolio':
+                return <MenuVisualComp colors={colors} />;
+            case 'booking':
+            case 'appointments':
+            case 'contact':
+                return <BookingVisualComp colors={colors} />;
+            case 'discounts':
+            case 'promocodes':
+                return <PromoVisualComp colors={colors} />;
+            default:
+                return <OrderVisual colors={colors} />;
         }
-        // Reviews
-        if (['reviews', 'testimonials'].includes(featureId)) {
-            return <ReviewVisual colors={colors} />;
-        }
-        // Inventory
-        if (['inventory'].includes(featureId)) {
-            return <InventoryVisual colors={colors} />;
-        }
-        // Menu
-        if (['menu', 'services', 'gallery', 'portfolio', 'digital'].includes(featureId)) {
-            return <MenuVisual colors={colors} />;
-        }
-        // Booking
-        if (['booking', 'appointments', 'contact', 'location'].includes(featureId)) {
-            return <BookingVisual colors={colors} />;
-        }
-        // Fallback
-        return <OrderVisual colors={colors} />;
     };
 
     return (
         <AnimatePresence mode="wait">
             <div key={featureId || 'default'}>
-                {getVisual()}
+                {getVisual(featureId)}
             </div>
         </AnimatePresence>
     );
@@ -237,57 +329,109 @@ const TemplateSkeleton = ({ storeName, colors }) => {
     const accent = colors ? colors[2] : '#1F2937';
 
     return (
-        <div className="w-full h-full flex flex-col bg-white overflow-hidden rounded-tl-[2rem]">
+<div className="w-full h-full flex flex-col bg-white overflow-hidden rounded-tl-[2rem]">
             {/* Navbar */}
-            <div className="h-20 border-b border-slate-100 flex items-center justify-between px-8 shrink-0 bg-white/80 backdrop-blur-sm transition-colors duration-500">
+            <div 
+                className="h-20 border-b border-slate-100 flex items-center justify-between px-8 shrink-0 bg-white/80 backdrop-blur-sm transition-colors duration-500"
+            >
                 <div className="flex gap-4 items-center">
-                    <div className="h-10 w-10 rounded-2xl flex items-center justify-center font-bold text-sm shadow-sm" style={{ backgroundColor: bg, color: accent }}>
+                    {/* Logo Box: Uses the accent color very subtly */}
+                    <div 
+                        className="h-10 w-10 rounded-2xl flex items-center justify-center font-bold text-sm shadow-sm transition-colors duration-500"
+                        style={{ 
+                            backgroundColor: colors[0], 
+                            color: colors[2] 
+                        }}
+                    >
                         {storeName ? storeName.charAt(0).toUpperCase() : 'B'}
                     </div>
                     <div className="hidden md:flex gap-3 items-center">
                         {storeName ? (
-                            <span className="text-3xl font-extrabold tracking-wide opacity-90" style={{ color: accent }}>{storeName}</span>
+                            <span className="text-3xl font-extrabold tracking-wide transition-colors duration-500" style={{ color: colors[2], opacity: 0.9 }}>
+                                {storeName}
+                            </span>
                         ) : (
-                            <div className="h-3 w-24 bg-slate-100 rounded-full"></div>
+                            <>
+                                <div className="h-3 w-24 bg-slate-100 rounded-full"></div>
+                                <div className="h-3 w-16 bg-slate-100 rounded-full"></div>
+                            </>
                         )}
                     </div>
                 </div>
                 <div className="flex gap-4">
                     <div className="h-10 w-10 bg-slate-100 rounded-full"></div>
-                    <div className="h-10 w-24 rounded-full opacity-50" style={{ backgroundColor: secondary }}></div>
+                    {/* CTA Button: Uses the secondary color lightly */}
+                    <div 
+                        className="h-10 w-24 rounded-full transition-colors duration-500"
+                        style={{ backgroundColor: colors[1], opacity: 0.5 }}
+                    ></div>
                 </div>
             </div>
 
             <div className="flex-grow p-8 flex flex-col gap-8 overflow-y-auto no-scrollbar bg-slate-50/20">
-                {/* Hero */}
+                {/* Hero Section */}
                 <div className="w-full aspect-[2.5/1] bg-white/90 rounded-[2.5rem] border border-slate-100 relative overflow-hidden flex p-10 gap-10 items-center shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)]">
-                    <div className="w-1/2 h-full rounded-[1.5rem] border border-slate-100 relative overflow-hidden" style={{ backgroundColor: bg }}>
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full mix-blend-multiply filter blur-2xl opacity-30" style={{ backgroundColor: secondary }}></div>
+                    {/* Hero Image Placeholder - Uses background color tint */}
+                    <div className="w-1/2 h-full rounded-[1.5rem] border border-slate-100 relative overflow-hidden transition-colors duration-500" style={{ backgroundColor: colors[0] }}>
+                         {/* Subtle Blobs - Only visible as a tint */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full mix-blend-multiply filter blur-2xl opacity-30 transition-colors duration-500" style={{ backgroundColor: colors[1] }}></div>
                     </div>
+                    
+                    {/* Hero Text Placeholders */}
                     <div className="w-1/2 space-y-5 z-10">
-                        <div className="h-4 w-20 rounded-full text-xs flex items-center justify-center font-bold uppercase tracking-wider opacity-60" style={{ backgroundColor: secondary, color: accent }}></div>
+                        <div className="h-4 w-20 rounded-full text-xs flex items-center justify-center font-bold uppercase tracking-wider transition-colors duration-500" style={{ backgroundColor: colors[1], color: colors[2], opacity: 0.6 }}></div>
                         <div className="space-y-3">
                             <div className="h-6 w-full bg-slate-200/60 rounded-2xl"></div>
                             <div className="h-6 w-3/4 bg-slate-200/60 rounded-2xl"></div>
                         </div>
+                        <div className="h-12 w-36 rounded-full mt-4 transition-colors duration-500" style={{ backgroundColor: colors[2], opacity: 0.1 }}></div>
                     </div>
                 </div>
-                
-                {/* Grid */}
+
                 <div className="grid grid-cols-2 gap-6 auto-rows-[11rem]">
-                    <div className="row-span-2 bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm">
-                        <div className="w-full flex-grow rounded-2xl border border-slate-50 mb-4 relative overflow-hidden" style={{ backgroundColor: bg }}></div>
-                        <div className="space-y-2.5 shrink-0"><div className="h-2 w-full bg-slate-100 rounded-full"></div></div>
+                    
+                    {/* 1. Big Integrated Grid (Spans 2 rows, taking the place of 1 & 3) */}
+                    <div className="row-span-2 bg-white rounded-[2rem] border border-slate-100 p-6 flex flex-col justify-between shadow-[0_2px_15px_-6px_rgba(0,0,0,0.03)] group hover:shadow-md transition-shadow">
+                        <div 
+                            className="w-full flex-grow rounded-2xl border border-slate-50 transition-colors duration-500 mb-4 relative overflow-hidden"
+                            style={{ backgroundColor: colors[0] }}
+                        >
+                             {/* Subtle detail inside big card */}
+                            <div className="absolute bottom-4 left-4 h-8 w-8 rounded-full bg-white/60"></div>
+                        </div>
+                        <div className="space-y-2.5 shrink-0">
+                            <div className="h-3 w-1/3 bg-slate-200/80 rounded-full"></div>
+                            <div className="h-2 w-full bg-slate-100 rounded-full"></div>
+                            <div className="h-2 w-3/4 bg-slate-100 rounded-full"></div>
+                        </div>
                     </div>
-                    <div className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm">
-                        <div className="h-10 w-10 rounded-2xl border border-slate-50" style={{ backgroundColor: bg }}></div>
-                        <div className="space-y-2.5 mt-auto"><div className="h-2 w-full bg-slate-100 rounded-full"></div></div>
+
+                    {/* 2. Top Right Card */}
+                    <div className="bg-white rounded-[2rem] border border-slate-100 p-6 flex flex-col justify-between shadow-[0_2px_15px_-6px_rgba(0,0,0,0.03)] group hover:shadow-md transition-shadow">
+                        <div 
+                            className="h-10 w-10 rounded-2xl border border-slate-50 transition-colors duration-500"
+                            style={{ backgroundColor: colors[0] }}
+                        ></div>
+                        <div className="space-y-2.5">
+                            <div className="h-3 w-1/2 bg-slate-200/80 rounded-full"></div>
+                            <div className="h-2 w-full bg-slate-100 rounded-full"></div>
+                        </div>
                     </div>
-                    <div className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm">
-                        <div className="h-10 w-10 rounded-2xl border border-slate-50" style={{ backgroundColor: bg }}></div>
+
+                    {/* 3. Bottom Right Card */}
+                    <div className="bg-white rounded-[2rem] border border-slate-100 p-6 flex flex-col justify-between shadow-[0_2px_15px_-6px_rgba(0,0,0,0.03)] group hover:shadow-md transition-shadow">
+                        <div 
+                            className="h-10 w-10 rounded-2xl border border-slate-50 transition-colors duration-500"
+                            style={{ backgroundColor: colors[0] }}
+                        ></div>
+                        <div className="space-y-2.5">
+                             <div className="h-3 w-1/2 bg-slate-200/80 rounded-full"></div>
+                             <div className="h-2 w-full bg-slate-100 rounded-full"></div>
+                        </div>
                     </div>
+
                 </div>
-            </div>
+        </div>
         </div>
     );
 };
@@ -306,7 +450,7 @@ const MockBrowser = ({ storeName, selectedVibes, activeVibe, hoveredFeature, cla
         >
             {/* Floating Visual Card */}
             <div className="absolute -left-[130px] top-[240px] z-50">
-                 <DynamicVisualOverlay featureId={hoveredFeature} colors={mixedColors} />
+                 <DynamicVisualOverlay hoveredFeature={hoveredFeature} colors={mixedColors} />
             </div>
 
             {/* Browser Header */}
