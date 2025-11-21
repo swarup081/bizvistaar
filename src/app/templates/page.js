@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'; 
@@ -39,14 +39,14 @@ const PrimaryHeader = ({ session, onLoginClick }) => {
         {/* Center: Navigation Links */}
         <nav className="flex items-center h-full text-gray-800 font-medium text-base gap-6 ml-auto">
             {navLinks.map((link) => (
-                <a 
+                <Link
                     key={link.label} 
                     href={link.href} 
                     className="flex items-center h-full hover:text-gray-900 transition-colors"
                 >
                     {link.label}
                     {link.hasDropdown && <ChevronDown size={18} className="ml-1 text-gray-500" />}
-                </a>
+                </Link>
             ))}
             <div className="h-6 w-px bg-gray-300 mx-1"></div>
         </nav>
@@ -64,7 +64,7 @@ const PrimaryHeader = ({ session, onLoginClick }) => {
                   </button>
                   {isDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                      <div className="p-3 text-sm text-gray-700 border-b">
+                      <div className="p-3 text-sm text-gray-700 border-b truncate">
                          {session.user.email}
                       </div>
                       <button 
@@ -90,78 +90,227 @@ const PrimaryHeader = ({ session, onLoginClick }) => {
   );
 };
 
+
+// --- Business Type Data (Moved outside components for reusability) ---
+const allBusinessTypes = [
+    'Retail Shop', 'Kirana Store / General Store', 'Online Store', 'Clothing Boutique', 'Saree Shop',
+    'Footwear Store', 'Stationery Shop', 'Bookstore', 'Gift Shop', 'Mobile Store',
+    'Electronics Store', 'Supermarket / Mini-Mart', 'Toy Store', 'Hardware Store', 'Pet Store',
+    'Handmade Crafts Store', 'Candle Shop', 'Artificial Jewellery Shop', 'Jewellery Store',
+    'Handicraft Emporium', 'Pottery Shop', 'Custom Gift Maker', 'Home Decor Boutique',
+    'Restaurant', 'Indian Restaurant', 'Ethnic/Theme Restaurant', 'Cafe', 'Bakery & Cake Shop',
+    'Sweet Shop', 'Tea Stall', 'Juice Center', 'Food Truck', 'Cloud Kitchen',
+    'Catering Service', 'Home Baker', 'Salon', 'Beauty Salon', 'Hair Salon',
+    'Nail Salon', 'Barbershop', 'Spa', 'Gym / Fitness Center', 'Yoga Studio',
+    'Healthcare Clinic', 'Doctor', 'Dentist', 'Pharmacy', 'Veterinary Clinic',
+    'Portfolio', 'Photographer', 'Designer', 'Developer', 'Artist', 'Blogger',
+    'Writer', 'Influencer', 'Consultant', 'Marketing Consultant', 'Financial Consultant',
+    'Business Consultant', 'Real Estate Agency', 'Construction Company', 'Law Firm',
+    'Technology Company', 'SaaS', 'Web Development Agency', 'Digital Marketing Agency',
+    'Event', 'Wedding Planner', 'Event Management', 'Educational Institution',
+    'Tutor / Coaching Center', 'Dance School', 'Music School', 'Automobile Repair',
+    'Car Wash', 'Mobile Repair Shop', 'Computer Repair', 'Dry Cleaner / Laundry Service',
+    'Electrician', 'Plumber'
+];
+
 // --- Secondary Navigation Component (Sticky/Floating with Search) ---
-const SecondaryNav = ({ filter, setFilter, defaultSearch, activeFilter }) => {
+const SecondaryNav = ({ filter, setFilter }) => {
+    const autocompleteRef = useRef(null);
+    const router = useRouter();
+    
+    // Internal state for the search input value and suggestions
+    const [searchValue, setSearchValue] = useState(filter); 
+    const [suggestions, setSuggestions] = useState([]);
+    // Use 'All Templates' as the default active category
+    const [activeCategory, setActiveCategory] = useState('All Templates'); 
+    
+    // Sync external filter prop with internal searchValue state and update active category
+    useEffect(() => {
+        setSearchValue(filter);
+        if (filter) {
+             // Try to set the active category based on the filter value if it matches a category keyword
+             const matchingItem = navItems.find(item => item.keyword.toLowerCase() === filter.toLowerCase());
+             if (matchingItem) {
+                 setActiveCategory(matchingItem.label);
+             } else {
+                 // If a specific business type is set via search, clear category highlight
+                 setActiveCategory(null); 
+             }
+        } else {
+             // If filter is empty, default to "All Templates"
+             setActiveCategory('All Templates');
+        }
+
+    }, [filter]);
+
+    // UPDATED NAV ITEMS - concise labels, added keywords for filtering logic
     const navItems = [
-        { label: 'Business & Services', hasDropdown: true },
-        { label: 'Store', hasDropdown: true },
-        { label: 'Creative', hasDropdown: true },
-        { label: 'Community', hasDropdown: true },
-        { label: 'Blog', hasDropdown: true },
+        { label: 'All Templates', keyword: '', href: '#all-templates' }, 
+        { label: 'Services', keyword: 'Consultant', href: '#services' }, 
+        { label: 'Store', keyword: 'Retail', href: '#store' }, 
+        { label: 'Creative', keyword: 'Portfolio', href: '#creative' }, 
+        { label: 'Community', keyword: 'Event', href: '#community' }, 
+        { label: 'Blog/Media', keyword: 'Blogger', href: '#blog' },
     ];
     
-    // Handler for removing a filter tag (e.g., the pre-filled business type)
-    const handleRemoveFilter = () => {
-        setFilter(''); // Clear the filter
+    // Function to get filtered suggestions
+    const getFilteredSuggestions = useCallback((value) => {
+        if (value.length > 1) {
+            const lowerSearchValue = value.toLowerCase();
+            const filtered = allBusinessTypes
+                .filter(type => type.toLowerCase().includes(lowerSearchValue))
+                .sort((a, b) => {
+                    const aLower = a.toLowerCase();
+                    const bLower = b.toLowerCase();
+                    if (aLower.startsWith(lowerSearchValue) && !bLower.startsWith(lowerSearchValue)) return -1;
+                    if (!aLower.startsWith(lowerSearchValue) && bLower.startsWith(lowerSearchValue)) return 1;
+                    if (a.length !== b.length) return a.length - b.length;
+                    return aLower.localeCompare(bLower);
+                });
+            setSuggestions(filtered);
+        } else {
+            setSuggestions([]);
+        }
+    }, []);
+
+    // Handle suggestion click (updates both internal state and external filter state)
+    const handleSuggestionClick = (suggestion) => {
+        setSearchValue(suggestion);
+        setFilter(suggestion); // Update the filter state in the parent component
+        localStorage.setItem('businessType', suggestion);
+        setSuggestions([]); 
+        setActiveCategory(null); // Clear category selection when search is used
+    };
+
+    // New: Handle category click
+    const handleCategoryClick = (label, keyword) => {
+        setActiveCategory(label);
+        setFilter(keyword); // Apply category filter to parent state
+        setSearchValue(''); // Clear manual search when category is selected
+        localStorage.removeItem('businessType'); // Clear saved business type when switching to a category
+        setSuggestions([]); 
     }
+
+    // New: Handle clearing the search field (X button)
+    const handleClearSearch = () => {
+        setSearchValue('');
+        setFilter('');
+        localStorage.removeItem('businessType');
+        setSuggestions([]);
+        // Re-default to 'All Templates' visual state
+        setActiveCategory('All Templates');
+    };
+
+    // Effect to run filtering when searchValue changes
+    useEffect(() => {
+        if (document.activeElement === document.getElementById('search-input') || suggestions.length > 0) {
+            getFilteredSuggestions(searchValue);
+        } else {
+             if(searchValue && searchValue.length === 0) {
+                 setSuggestions([]);
+             }
+        }
+    }, [searchValue, getFilteredSuggestions, suggestions.length]);
+
+
+    // Close suggestions when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (autocompleteRef.current && !autocompleteRef.current.contains(event.target)) {
+                setSuggestions([]);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [autocompleteRef]);
+
 
     return (
         // Sticky at top-0 after PrimaryHeader scrolls past
-        <nav className="w-full bg-white border-b border-gray-200 text-gray-700 font-medium text-base  sticky top-0 z-40">
-            <div className="mx-auto px-6 max-w-screen-2xl h-14 flex items-center justify-between">
+        <nav className="w-full bg-white border-b border-gray-200 text-gray-700 font-sans sticky top-[0px] z-40">
+            <div className="mx-auto px-12 max-w-screen-2xl h-14 flex items-center justify-between">
                 
-                {/* Left Side: Navigation Links */}
-                <div className="flex items-center gap-8">
+                {/* Left Side: Navigation Links (Filters with smoother UI) */}
+                <div className="flex items-center gap-6 text-base font-medium h-full">
+                    {/* Using motion.button and layoutId for smooth underline transition */}
                     {navItems.map((item) => (
-                        <a 
+                        <motion.button 
                             key={item.label}
-                            href="#"
-                            className={`flex items-center h-full transition-colors ${
-                                item.isActive 
-                                    ? 'text-blue-600 border-b-2 border-blue-600' 
-                                    : 'hover:text-gray-900'
-                            }`}
+                            onClick={() => handleCategoryClick(item.label, item.keyword)}
+                            className={cn(
+                                'flex items-center h-full transition-colors relative', 
+                                'pt-3', // Added pt-3 for better alignment/baseline
+                                activeCategory === item.label
+                                    ? 'text-gray-900 font-semibold' 
+                                    : 'text-gray-600 hover:text-gray-900'
+                            )}
                         >
                             {item.label}
-                            {item.hasDropdown && <ChevronDown size={18} className="ml-1 text-gray-500" />}
-                        </a>
+                            {/* Visual Indicator for Active Category (Bottom line) */}
+                            {activeCategory === item.label && (
+                                <motion.div 
+                                    layoutId="category-underline"
+                                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" 
+                                    transition={{ duration: 0.2, type: "tween" }}
+                                />
+                            )}
+                        </motion.button>
                     ))}
                 </div>
                 
-                {/* Right Side: All Templates + Search/Filter */}
-                <div className="flex items-center gap-6 h-full">
-                    
-                    {/* All Templates Link */}
-                  
-                    
-                    {/* Search/Filter Area */}
-                    {activeFilter ? (
-                        <div className="flex items-center relative ml-4 border-b-2 border-black-700/80">
-                            {/* Active Filter Pill with X */}
-                            <span className="text-gray-800 text-base py-1">
-                                {activeFilter}
-                            </span>
-                            <X size={18} className="ml-2 text-black cursor-pointer hover:text-black" onClick={handleRemoveFilter} />
-                        </div>
-                    ) : (
-                        // Search Input (Styled like get-started)
-                        <div className="relative flex items-center w-60 ml-4">
+                {/* Right Side: Search/Filter (Shorter Dash and Clear Button) */}
+                <div className="relative ml-5 max-w-md w-76" ref={autocompleteRef}> 
+                    <div className="flex items-end">
+                        <div className="relative flex-grow">
+                            <Search className="absolute left-1 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                             <input
+                                id="search-input"
                                 type="text"
-                                placeholder="Search all templates"
-                                value={filter}
-                                onChange={(e) => setFilter(e.target.value)}
-                                className="w-full bg-transparent border-0 border-b-2 border-gray-300 py-1 text-base text-gray-800 placeholder:text-gray-400 focus:ring-0 focus:border-black transition-colors duration-300 outline-none pr-7"
+                                value={searchValue}
+                                onChange={(e) => { 
+                                    setSearchValue(e.target.value); 
+                                    setFilter(e.target.value);
+                                    setActiveCategory(null); // Remove category highlight on manual search
+                                }}
+                                onFocus={() => getFilteredSuggestions(searchValue)}
+                                placeholder="Search for your business "
+                                // pt-3/pb-2 for alignment, pr-8 accounts for the X button
+                                className="w-full bg-transparent border-0 border-b-2 border-gray-300 pt-3 pb-2 pl-9 text-lg text-gray-800 placeholder:text-gray-400 focus:ring-0 focus:border-black transition-colors duration-300 outline-none pr-8"
                             />
-                            {/* Search Icon on the right */}
-                            <Search size={18} className="absolute right-0 text-gray-400 cursor-pointer hover:text-gray-600" />
+                            
+                            {/* Clear Button (X) - visible when search value exists */}
+                            {searchValue && (
+                                <button 
+                                    onClick={handleClearSearch} 
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:text-gray-900 transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            )}
+                            
+                            {suggestions.length > 0 && (
+                                <ul className="autocomplete-scrollbar absolute z-50 w-full mt-2 top-full bg-white border border-gray-200 rounded-2xl shadow-lg max-h-60 overflow-y-auto">
+                                    {suggestions.map((suggestion, index) => (
+                                        <li
+                                            key={index}
+                                            onClick={() => handleSuggestionClick(suggestion)}
+                                            className="px-6 py-2.5 text-base cursor-pointer hover:bg-gray-100 first:rounded-t-2xl last:rounded-b-2xl"
+                                        >
+                                            {suggestion}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
         </nav>
     );
 };
+
 
 // --- Data for the templates (Extended with keywords and recommended status) ---
 const templates = [
@@ -171,7 +320,7 @@ const templates = [
     url: '/templates/flavornest',
     previewUrl: '/preview/flavornest',
     editor:'/editor/flavornest',
-    keywords: ['Food', 'Sweets', 'Bakery', 'Mithai', 'Coming Soon'],
+    keywords: ['Food', 'Sweets', 'Bakery', 'Mithai', 'Coming Soon', 'Restaurant', 'Cafe', 'Cloud Kitchen'],
     isRecommended: true,
   },
   {
@@ -180,7 +329,8 @@ const templates = [
     url: '/templates/flara',
     previewUrl: '/preview/flara',
     editor:'/editor/flara',
-    keywords: ['Retail', 'E-commerce', 'Candles', 'Handmade', 'Clean']
+    keywords: ['Retail', 'E-commerce', 'Candles', 'Handmade', 'Clean', 'Online Store', 'Clothing Boutique'],
+    isRecommended: false,
   },
   {
     title: 'avenix',
@@ -188,7 +338,8 @@ const templates = [
     url: '/templates/avenix',
     previewUrl: '/preview/avenix',
     editor:'/editor/avenix',
-    keywords: ['Fashion', 'Apparel', 'Minimalist', 'Bold', 'Portfolio']
+    keywords: ['Fashion', 'Apparel', 'Minimalist', 'Bold', 'Portfolio', 'Designer', 'Photographer', 'Creative'],
+    isRecommended: false,
   },
   {
     title: 'blissly',
@@ -196,7 +347,8 @@ const templates = [
     url: '/templates/blissly',
     previewUrl: '/preview/blissly',
     editor:'/editor/blissly',
-    keywords: ['Cafe', 'Restaurant', 'Events', 'Booking', 'Coffee']
+    keywords: ['Cafe', 'Restaurant', 'Events', 'Booking', 'Coffee', 'Community'],
+    isRecommended: false,
   }
 ];
 
@@ -340,7 +492,7 @@ const TemplateCard = ({ title, description, url, previewUrl, editor, keywords, i
       </div>
 
 
-      {/* --- Hover Info Block (MODIFIED FOR CONDITIONAL VISIBILITY) --- */}
+      {/* --- Hover Info Block --- */}
       <div className="mt-8 min-h-[140px] transform px-2 opacity-0 transition-opacity duration-300 ease-in-out group-hover:opacity-100">
         <h3 className="text-xl font-bold text-gray-900">{title}</h3>
         <p className="mt-2 text-base leading-relaxed text-gray-600">{description}</p>
@@ -353,11 +505,15 @@ const TemplateCard = ({ title, description, url, previewUrl, editor, keywords, i
             >
               {isCreating ? 'Creating...' : 'Start Editing'}
             </button>
-            <Link href={previewUrl} target="_blank" rel="noopener noreferrer">
-                <button className="rounded-lg bg-white px-6 py-2.5 text-base font-semibold text-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 transition-colors hover:bg-gray-50">
-                    Preview Site
-                </button>
-            </Link>
+            {/* FIX APPLIED HERE: Replaced Link with deprecated legacyBehavior prop with a standard <a> tag for external link */}
+            <a 
+              href={previewUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="rounded-lg bg-white px-6 py-2.5 text-base font-semibold text-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 transition-colors hover:bg-gray-50 flex items-center justify-center"
+            >
+                Preview Site
+            </a>
         </div>
       </div>
     </motion.div>
@@ -417,6 +573,16 @@ export default function TemplatesPage() {
   // Logic to determine if a filter is active
   const activeFilter = filter.trim();
 
+  // Logic for filtering templates (A basic example based on the business type/keyword filter)
+  const filteredTemplates = activeFilter 
+    ? templates.filter(template => 
+        template.keywords.some(keyword => 
+            keyword.toLowerCase().includes(activeFilter.toLowerCase())
+        )
+      )
+    : templates;
+
+
   return (
     // Outer container ensures main header and secondary nav backgrounds are pure white
     <div className="bg-white font-sans min-h-screen">
@@ -424,13 +590,14 @@ export default function TemplatesPage() {
       {/* 1. Primary Header (Now scrolls) */}
       <PrimaryHeader session={session} onLoginClick={handleLoginClick} />
       
-      {/* 2. Secondary Navigation Bar (Sticky/Floating) */}
+      {/* 2. Secondary Navigation Bar (Sticky/Floating) - Passed filter state */}
+      <SecondaryNav filter={filter} setFilter={setFilter} />
       
       {/* Main Content Area (Background is now grayish) */}
-      <div className="bg-gray-50 pb-20 pt-16"> {/* Added pt-16 for space below secondary nav */}
+      <div className="bg-gray-50 pb-20 pt-16"> {/* pt-16 for space below sticky nav */}
           <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
             
-            {/* Top Content: Title (reverted) and "Sort by" */}
+            {/* Top Content: Title and "Sort by" */}
             <div className="text-left max-w-screen-2xl mx-auto mb-10">
                 <div className="flex flex-col items-center text-center w-full space-y-3">
                     <h2 className="text-5xl font-bold tracking-tight not-italic text-gray-900">
@@ -440,8 +607,6 @@ export default function TemplatesPage() {
                     <p className="text-gray-600 text-base mt-1">
                         Pick the perfect starting point for your brand.
                     </p>
-
-                   
                 </div>
             </div>
 
@@ -466,14 +631,26 @@ export default function TemplatesPage() {
                 </div>
             </div>
 
-            <SecondaryNav filter={activeFilter} setFilter={setFilter} activeFilter={activeFilter} defaultSearch={localStorage.getItem('businessType') || ''} />
-
-         
             {/* Template Grid Container */}
-            <div className="mt-24 grid grid-cols-1 justify-items-start gap-x-16 gap-y-24 lg:grid-cols-2 lg:gap-x-10 lg:gap-y-28 pl-6">
-              {templates.map((template, index) => (
+            <div className="mt-12 grid grid-cols-1 justify-items-start gap-x-16 gap-y-24 lg:grid-cols-2 lg:gap-x-10 lg:gap-y-28 pl-6">
+              {filteredTemplates.map((template, index) => (
                 <TemplateCard key={`${template.title}-${index}`} {...template} />
               ))}
+
+              {filteredTemplates.length === 0 && (
+                <div className="lg:col-span-2 text-center py-20">
+                    <p className="text-2xl text-gray-600">No templates found for: <span className="font-bold">"{activeFilter}"</span></p>
+                    <p className="text-gray-500 mt-2">Try a different search term or view all templates.</p>
+                    {activeFilter && (
+                       <button 
+                          onClick={() => setFilter('')}
+                          className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                       >
+                         View All Templates
+                       </button>
+                    )}
+                </div>
+              )}
             </div>
           </div>
       </div>
