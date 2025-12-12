@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useCart } from './cartContext.js';
 import { useTemplateContext } from './templateContext.js';
 import Link from 'next/link';
-import { ShoppingBag, Instagram, Facebook, Twitter, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ShoppingBag, Instagram, Facebook, Twitter, ChevronDown, ChevronRight, ChevronLeft, Store } from 'lucide-react';
 
 // --- CUSTOM SVG SEPARATOR (The "Icing" Drip) ---
 export const WavySeparatorTop = ({ fill = "#592E4F" }) => (
@@ -15,7 +15,6 @@ export const WavySeparatorTop = ({ fill = "#592E4F" }) => (
             viewBox="0 0 1200 120" 
             preserveAspectRatio="none"
         >
-            {/* Irregular dripping path matching the screenshot */}
             <path 
                 d="M0,0 V40 
                    C150,100 280,20 400,60 
@@ -37,7 +36,6 @@ export const WavySeparatorBottom = ({ fill = "#592E4F" }) => (
             viewBox="0 0 1200 120" 
             preserveAspectRatio="none"
         >
-            {/* Irregular dripping path matching the screenshot */}
             <path 
                 d="M0,0 
                    V30 
@@ -51,37 +49,42 @@ export const WavySeparatorBottom = ({ fill = "#592E4F" }) => (
         </svg>
     </div>
 );
-// --- HEADER (Centered Logo, "Made with Love" banner) ---
+
+// --- HEADER ---
 export const Header = () => {
     const { businessData } = useTemplateContext();
     const { cartCount, openCart } = useCart();
 
     return (
-        <header className="fixed top-0 w-full z-50 bg-white overflow-hidden">
+        <header className="fixed top-0 w-full z-50 bg-white overflow-hidden shadow-sm">
             {/* Top Banner */}
             <div className="bg-[var(--color-primary)] text-white text-[10px] font-bold uppercase tracking-[0.2em] text-center py-2">
                 • {businessData.hero.badge || "Made with Love"} • {businessData.hero.badge || "Made with Love"} • {businessData.hero.badge || "Made with Love"} •
             </div>
             
-            <div className="container mx-auto px-6 py-4 flex justify-between items-center border-b border-gray-100">
-                {/* Socials / Left */}
-                <div className="flex gap-2 text-[var(--color-primary)]">
-                    <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center hover:opacity-80 transition cursor-pointer">
-                        <Instagram className="w-4 h-4" />
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center hover:opacity-80 transition cursor-pointer">
-                        <Facebook className="w-4 h-4" />
-                    </div>
+            <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+                {/* Left: SHOP Button (Prominent UI) */}
+                <div className="flex gap-2">
+                    <Link 
+                        href="/templates/frostify/shop" 
+                        className="flex items-center gap-2 bg-[var(--color-secondary)] text-white px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-[var(--color-primary)] transition-all shadow-md transform hover:scale-105"
+                    >
+                        <Store size={14} />
+                        Shop 
+                    </Link>
                 </div>
 
-                {/* Logo (Centered) */}
-                <Link href="/templates/frostify" className="text-4xl font-serif text-[var(--color-primary)]">
+                {/* Center: Logo */}
+                <Link href="/templates/frostify" className="text-4xl font-serif text-[var(--color-primary)] absolute left-1/2 -translate-x-1/2">
                     {businessData.name}
                 </Link>
 
-                {/* Menu / Right */}
-                <button onClick={openCart} className="bg-[var(--color-primary)] text-white px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-[var(--color-secondary)] transition">
-                    Menu
+                {/* Right: Cart Button (Preserved Menu Style) */}
+                <button 
+                    onClick={openCart} 
+                    className="bg-[var(--color-primary)] text-white px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-[var(--color-secondary)] transition"
+                >
+                    Cart
                     {cartCount > 0 && <span>({cartCount})</span>}
                 </button>
             </div>
@@ -90,9 +93,7 @@ export const Header = () => {
 };
 
 // --- SPECIALTY CARD (Unique Shape from Image) ---
-// Shape: Rounded top-left and top-right, or specific custom radius
 export const SpecialtyCard = ({ title, shapeClass = "rounded-t-[30px]" }) => {
-    // Splits title into two lines for style if needed
     const parts = title.split(' '); 
     
     return (
@@ -103,6 +104,44 @@ export const SpecialtyCard = ({ title, shapeClass = "rounded-t-[30px]" }) => {
         </div>
     );
 };
+
+// --- PRODUCT CARD (Reusable) ---
+export const ProductCard = ({ item }) => {
+    const { addItem } = useCart();
+    
+    const handleAddToCart = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        addItem(item);
+    };
+
+    return (
+        <div className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white border border-pink-50 h-full flex flex-col">
+            <Link href={`/templates/frostify/product/${item.id}`} className="block flex-grow-0">
+                <div className="aspect-[4/5] overflow-hidden relative bg-[#F9F4F6]">
+                    <img 
+                        src={item.image} 
+                        alt={item.name} 
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                    />
+                </div>
+            </Link>
+            <div className="p-5 text-center flex flex-col items-center gap-2 flex-grow">
+                <Link href={`/templates/frostify/product/${item.id}`} className="flex-grow">
+                    <h3 className="font-serif text-lg text-[var(--color-primary)] hover:text-[var(--color-secondary)] tracking-wide">{item.name}</h3>
+                </Link>
+                <p className="text-[var(--color-secondary)] font-bold text-lg">${item.price.toFixed(2)}</p>
+                <button
+                    onClick={handleAddToCart}
+                    className="mt-auto w-full bg-[var(--color-primary)] text-white py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-[var(--color-secondary)] transition-colors flex items-center justify-center gap-2"
+                >
+                    <ShoppingBag size={14} /> Add to Cart
+                </button>
+            </div>
+        </div>
+    );
+};
+
 // --- FAQ ACCORDION ---
 export const FAQItem = ({ question, answer }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -128,8 +167,6 @@ export const Footer = () => {
     
     return (
         <footer className="relative bg-[var(--color-primary)] text-white overflow-hidden">
-          
-            {/* Top Wavy Decor */}
             <div className="absolute top-0 left-0 w-full -translate-y-[99%] pointer-events-none">
                 <WavySeparatorBottom fill="#592E4F" />
             </div>
@@ -137,30 +174,6 @@ export const Footer = () => {
             <div className="container mx-auto px-6 pt-10 pb-10 text-center relative z-10">
                 <h2 className="text-4xl font-serif mb-2">Contact us</h2>
                 
-                {/* Form Simulation (Visual Only) */}
-                <div className="max-w-lg mx-auto mt-8 space-y-4 text-left">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-[10px] uppercase font-bold ml-2">Name *</label>
-                            <input type="text" className="w-full bg-white rounded-full px-4 py-2 text-[var(--color-primary)] focus:outline-none" />
-                        </div>
-                        <div>
-                            <label className="text-[10px] uppercase font-bold ml-2">Email *</label>
-                            <input type="email" className="w-full bg-white rounded-full px-4 py-2 text-[var(--color-primary)] focus:outline-none" />
-                        </div>
-                    </div>
-                    <div>
-                        <label className="text-[10px] uppercase font-bold ml-2">Message *</label>
-                        <textarea className="w-full bg-white rounded-2xl px-4 py-2 text-[var(--color-primary)] focus:outline-none h-24" />
-                    </div>
-                    <div className="text-center">
-                        <button className="bg-[var(--color-accent)] text-[var(--color-primary)] px-10 py-2 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-white transition-colors">
-                            Submit
-                        </button>
-                    </div>
-                </div>
-
-                {/* Info */}
                 <div className="mt-16 text-left max-w-lg mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 text-sm font-medium opacity-80">
                     <div>
                         <p className="font-bold uppercase tracking-widest mb-2 opacity-100">Opening Hours:</p>
@@ -189,10 +202,6 @@ export const Footer = () => {
                 
                 <p className="text-[10px] mt-4 opacity-50">{businessData.footer.copyright}</p>
             </div>
-            
-            {/* Bottom Wavy Decor (Upside down white wave for page end effect if needed) */}
-          
         </footer>
-        
     );
 };

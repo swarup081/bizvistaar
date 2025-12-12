@@ -351,6 +351,15 @@ const templates = [
     isRecommended: false,
   },
   {
+    title: 'frostify',
+    description: 'A cozy coffee shop/cafe theme, blending modern functionality like event management and product ordering with a warm, inviting feel.',
+    url: '/templates/frostify',
+    previewUrl: '/preview/frostify',
+    editor:'/editor/frostify',
+    keywords: ['Cafe', 'Restaurant', 'Events', 'Booking', 'Coffee', 'Community'],
+    isRecommended: false,
+  },
+  {
     title: 'aurora',
     description: 'A cozy coffee shop/cafe theme, blending modern functionality like event management and product ordering with a warm, inviting feel.',
     url: '/templates/aurora',

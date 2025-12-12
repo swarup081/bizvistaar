@@ -2,14 +2,24 @@
 import { useState, useEffect } from 'react';
 import { businessData as initialBusinessData } from './data.js';
 import { Header, Footer } from './components.js';
-import { CartProvider, useCart } from './cartContext.js'; // Reuse generic context
+import { CartProvider, useCart } from './cartContext.js';
 import { TemplateContext } from './templateContext.js';
 import { Editable } from '@/components/editor/Editable';
-import { X } from 'lucide-react';
+import { X, Minus, Plus } from 'lucide-react'; // Added icons
 
 function CartLayout({ children, serverData }) {
     const [businessData, setBusinessData] = useState(serverData || initialBusinessData);
-    const { isCartOpen, closeCart, cartDetails, total, removeFromCart } = useCart();
+    
+    // Get data from the NEW context
+    const { 
+        isCartOpen, 
+        closeCart, 
+        cartDetails, 
+        total, 
+        increaseQuantity, 
+        decreaseQuantity, 
+        removeFromCart 
+    } = useCart();
 
     useEffect(() => {
         if (serverData) return;
@@ -30,40 +40,23 @@ function CartLayout({ children, serverData }) {
     return (
         <TemplateContext.Provider value={{ businessData, setBusinessData }}>
             <style jsx global>{`
-                /* Fonts matching the reference image */
                 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Quicksand:wght@300;400;500;600;700&display=swap');
-                
                 :root {
-                    /* --- FROSTIFY PALETTE (Purple/Violet Theme) --- */
                     --color-bg: #FFFFFF;         
-                    --color-primary: #592E4F;    /* Deep Plum/Purple */
-                    --color-secondary: #9E5A85;  /* Lighter Mauve */
-                    --color-accent: #DFA8B7;     /* Pinkish Accent */
-                    --color-surface: #F9F4F6;    /* Light Gray/Pink tint */
-                    
-                    /* --- FONTS --- */
+                    --color-primary: #592E4F;    
+                    --color-secondary: #9E5A85;  
+                    --color-accent: #DFA8B7;     
+                    --color-surface: #F9F4F6;    
                     --font-serif: 'DM Serif Display', serif;
                     --font-sans: 'Quicksand', sans-serif;
                 }
-
                 body {
                     font-family: var(--font-sans);
                     color: var(--color-primary);
                     background-color: var(--color-bg);
                     overflow-x: hidden;
                 }
-
-                h1, h2, h3, h4, h5, h6 {
-                    font-family: var(--font-serif);
-                }
-                
-                .wavy-separator {
-                    width: 100%;
-                    height: 50px;
-                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23592E4F' fill-opacity='1' d='M0,160L60,165.3C120,171,240,181,360,176C480,171,600,149,720,138.7C840,128,960,128,1080,144C1200,160,1320,192,1380,208L1440,224L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
-                    background-size: cover;
-                    background-repeat: no-repeat;
-                }
+                h1, h2, h3, h4, h5, h6 { font-family: var(--font-serif); }
             `}</style>
 
             <div className="antialiased min-h-screen flex flex-col relative">
@@ -71,18 +64,65 @@ function CartLayout({ children, serverData }) {
                 <main className="flex-grow pt-24">{children}</main>
                 <Editable focusId="footer"><Footer /></Editable>
 
-                {/* Cart Drawer (Standard) */}
+                {/* --- CART DRAWER --- */}
                 <div className={`fixed inset-0 z-[100] transition-all duration-500 ${isCartOpen ? 'visible' : 'invisible'}`}>
-                    <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={closeCart} />
-                    <div className={`absolute right-0 top-0 h-full w-full max-w-[400px] bg-white shadow-2xl transition-transform duration-500 ${isCartOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                        {/* Cart Content Here (Simulated for brevity) */}
-                        <div className="p-8">
-                            <div className="flex justify-between items-center mb-8">
-                                <h2 className="text-2xl font-serif text-[var(--color-primary)]">Your Basket</h2>
-                                <button onClick={closeCart}><X /></button>
-                            </div>
-                            {/* ... Cart items logic ... */}
+                    {/* Backdrop */}
+                    <div className={`absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-500 ${isCartOpen ? 'opacity-100' : 'opacity-0'}`} onClick={closeCart} />
+                    
+                    {/* Drawer Panel */}
+                    <div className={`absolute right-0 top-0 h-full w-full max-w-[400px] bg-white shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isCartOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col`}>
+                        
+                        {/* Drawer Header */}
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white z-10">
+                            <h2 className="text-2xl font-serif text-[var(--color-primary)]">Your Basket</h2>
+                            <button onClick={closeCart} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"><X size={20}/></button>
                         </div>
+
+                        {/* Drawer Items */}
+                        <div className="flex-grow overflow-y-auto p-6 space-y-6">
+                            {cartDetails.length === 0 ? (
+                                <div className="h-full flex flex-col items-center justify-center text-center opacity-50 space-y-4">
+                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-3xl">🧺</div>
+                                    <p>Your basket is empty</p>
+                                    <button onClick={closeCart} className="text-[var(--color-secondary)] underline text-sm">Continue Shopping</button>
+                                </div>
+                            ) : (
+                                cartDetails.map(item => (
+                                    <div key={item.id} className="flex gap-4 group">
+                                        <div className="w-20 h-20 rounded-xl bg-[#F9F4F6] overflow-hidden flex-shrink-0">
+                                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex-grow flex flex-col justify-between py-1">
+                                            <div>
+                                                <h4 className="font-serif text-[var(--color-primary)] text-lg leading-tight">{item.name}</h4>
+                                                <p className="text-sm font-bold text-[var(--color-secondary)]">${item.price.toFixed(2)}</p>
+                                            </div>
+                                            <div className="flex items-center justify-between mt-2">
+                                                <div className="flex items-center border border-gray-200 rounded-full px-2 py-0.5">
+                                                    <button onClick={() => decreaseQuantity(item.id)} className="p-1 hover:text-[var(--color-secondary)]"><Minus size={12}/></button>
+                                                    <span className="text-xs font-bold w-6 text-center">{item.quantity}</span>
+                                                    <button onClick={() => increaseQuantity(item.id)} className="p-1 hover:text-[var(--color-secondary)]"><Plus size={12}/></button>
+                                                </div>
+                                                <button onClick={() => removeFromCart(item.id)} className="text-xs text-gray-400 hover:text-red-500 underline">Remove</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Drawer Footer */}
+                        {cartDetails.length > 0 && (
+                            <div className="p-6 border-t border-gray-100 bg-[#F9F4F6]">
+                                <div className="flex justify-between items-center mb-4">
+                                    <span className="text-sm text-gray-500 uppercase tracking-widest font-bold">Total</span>
+                                    <span className="text-3xl font-serif text-[var(--color-primary)]">${total.toFixed(2)}</span>
+                                </div>
+                                <a href="/templates/frostify/checkout" className="block w-full bg-[var(--color-primary)] text-white text-center py-4 rounded-full text-xs font-bold uppercase tracking-[0.2em] hover:bg-[var(--color-secondary)] transition-colors shadow-lg">
+                                    Proceed to Checkout
+                                </a>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

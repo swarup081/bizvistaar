@@ -3,17 +3,17 @@
 // Define styles here so they are editable
 const styleConfig = {
     colors: {
-        primary: "#592E4F",       // Deep Plum/Violet (Headings, Footer, Buttons)
-        secondary: "#9E5A85",     // Lighter Orchid/Mauve (Accents)
-        background: "#FFF5F8",    // Very Pale Pink (Main Background)
-        surface: "#FFFFFF",       // Pure White (Cards)
+        primary: "#592E4F",       // Deep Plum/Violet
+        secondary: "#9E5A85",     // Lighter Orchid/Mauve
+        background: "#FFF5F8",    // Very Pale Pink
+        surface: "#FFFFFF",       // Pure White
         textLight: "#7D5A6F",     // Muted Violet text
         footerBg: "#592E4F",      // Dark Footer background
         footerText: "#FFDDE6"     // Light Footer Text
     },
     fonts: {
-        heading: "DM Serif Display", // Elegant Serif (Matches 'Sweet Delight')
-        body: "Quicksand"            // Rounded Sans-serif (Matches body text)
+        heading: "DM Serif Display", 
+        body: "Quicksand"            
     }
 };
 
@@ -25,13 +25,22 @@ const categories = [
 ];
 
 const allProducts = [
+    
+    { 
+        id: 8, 
+        name: "BUTTER CAKE", 
+        price: 4.50, 
+        category: 'pastries',
+        description: "Classic french butter croissant.",
+        image: "/frostify/paulina-kaminska-M9xYLiRnH_k-unsplash.jpg" 
+    },
     { 
       id: 1, 
       name: "CHOCOLATE CROISSANT", 
       price: 6.50,
       category: 'pastries',
       description: "Buttery, flaky pastry filled with dark Belgian chocolate.",
-      image: "https://images.unsplash.com/photo-1555507036-ab1f40388085?auto=format&fit=crop&q=80&w=800"
+      image: "/frostify/mae-mu-m9pzwmxm2rk-unsplash.jpg"
     },
     { 
       id: 2, 
@@ -39,7 +48,7 @@ const allProducts = [
       price: 55.00,
       category: 'cakes',
       description: "Three layers of vanilla sponge soaked in lavender syrup with buttercream.",
-      image: "https://images.unsplash.com/photo-1588195538326-c5f1f23fa438?auto=format&fit=crop&q=80&w=800"
+      image: "/frostify/junior-reis--72q2VOq90Q-unsplash.jpg"
     },
     { 
       id: 3, 
@@ -55,7 +64,31 @@ const allProducts = [
       price: 12.00,
       category: 'breads',
       description: "Slow-fermented sourdough with a crispy crust.",
-      image: "https://images.unsplash.com/photo-1585476644321-b976d9996596?auto=format&fit=crop&q=80&w=800"
+      image: "/frostify/kobby-mendez-q54Oxq44MZs-unsplash.jpg"
+    },
+    { 
+        id: 5, 
+        name: "BERRY TART", 
+        price: 8.50,
+        category: 'pastries',
+        description: "Fresh berries atop a smooth vanilla custard.",
+        image: "https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?auto=format&fit=crop&q=80&w=400" 
+    },
+    { 
+        id: 6, 
+        name: "RED VELVET CAKE", 
+        price: 45.00,
+        category: 'cakes',
+        description: "Classic red velvet with cream cheese frosting.",
+        image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=400" 
+    },
+    { 
+        id: 7, 
+        name: "SOURDOUGH LOAF", 
+        price: 10.00,
+        category: 'breads',
+        description: "Freshly baked sourdough loaf.",
+        image: "/frostify/katie-rosario-QNyRp21hb5I-unsplash.jpg" 
     }
 ];
 
@@ -70,7 +103,7 @@ export const businessData = {
     
     pages: [
       { name: 'Home', path: '/templates/frostify' },
-      { name: 'Menu', path: '/templates/frostify/menu' },
+      { name: 'Menu', path: '/templates/frostify/shop' },
       { name: 'Contact', path: '/templates/frostify#contact' }
     ],
 
@@ -81,23 +114,22 @@ export const businessData = {
     gallerySectionId: "gallery",
     faqSectionId: "faq",
     footerSectionId: "footer",
+    testimonialsSectionId: "testimonials",
 
     hero: {
         badge: "Made with Love",
         title: "Homemade Goodness in Every Bite",
         subtitle: "Freshly baked with love, using the finest ingredients.",
         cta: "Explore Treats",
-        // Image 1 (Macarons/Pastries - Left side)
         image1: "https://images.unsplash.com/photo-1558301211-0d8c8ddee6ec?auto=format&fit=crop&q=80&w=800",
-        // Image 2 (Cake - Right side)
-        image2: "https://images.unsplash.com/photo-1558301211-0d8c8ddee6ec?auto=format&fit=crop&q=80&w=800"
+        image2: "/frostify/sincerely-media-z10eH_RA6ZQ-unsplash.jpg"
     },
 
     about: {
         title: "Meet Johanna",
         text: "Johanna, the heart behind Sweet Delight, believes the best treats are made with love and the finest ingredients. With years of baking experience, she creates delicious homemade pastries that bring joy to every bite.",
         subtext: "Come visit and taste Johanna's creations—you'll love every bite!",
-        image: "https://images.unsplash.com/photo-1583394293214-28ded15ee548?auto=format&fit=crop&q=80&w=800"
+        image: "/frostify/frostifybaleryface.jpg"
     },
 
     specialties: {
@@ -110,14 +142,15 @@ export const businessData = {
         ]
     },
     
-
-    // Used for the gallery strip in the image
+    // Updated Gallery to include full product details from allProducts
     gallery: {
-        images: [
-            "https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?auto=format&fit=crop&q=80&w=400", // Ice cream/dessert
-            "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=400", // Cake
-            "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=400", // Bread
-            "https://images.unsplash.com/photo-1488477181946-6428a029177b?auto=format&fit=crop&q=80&w=400"  // Croissant
+        title: "Fresh from the Oven",
+        // These now reference the 'allProducts' list IDs basically, but we define them here for the homepage specifically
+        items: [
+            allProducts[4], // Berry Tart
+            allProducts[5], // Velvet Cake
+            allProducts[6], // Sourdough
+            allProducts[7]  // Croissant
         ]
     },
 
@@ -129,6 +162,27 @@ export const businessData = {
             { q: "DO YOU MAKE CUSTOM CAKES?", a: "Yes! We specialize in custom designs for weddings and birthdays." },
             { q: "HOW MUCH NOTICE DO YOU NEED?", a: "We require at least 2 weeks notice for custom orders." },
             { q: "DO YOU OFFER GLUTEN-FREE?", a: "Yes, we have a selection of gluten-free cupcakes and cookies." }
+        ]
+    },
+
+    testimonials: {
+        title: "Sweet Words",
+        items: [
+            {
+                text: "The chocolate croissants here are the best I've ever had! Perfectly flaky and rich.",
+                author: "Sarah M.",
+                image: "https://images.unsplash.com/photo-1550617931-e17a7b70dce2?auto=format&fit=crop&q=80&w=800"
+            },
+            {
+                text: "Ordered a custom birthday cake and it was stunning. Tasted even better than it looked!",
+                author: "James D.",
+                image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=800"
+            },
+            {
+                text: "My go-to spot for morning coffee and a treat. The atmosphere is just lovely.",
+                author: "Emily R.",
+                image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=800"
+            }
         ]
     },
 

@@ -46,6 +46,8 @@ next-env.d.ts
 /public/flaraImage
 /public/flavournestImage
 /public/aurora
+/public/frostify
+
 
 src/components/ui
 
