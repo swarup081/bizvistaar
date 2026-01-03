@@ -15,6 +15,7 @@ export async function submitOrder({ siteSlug, cartDetails, customerDetails, tota
       .from('websites')
       .select('id, user_id')
       .eq('site_slug', siteSlug)
+      .limit(1)
       .single();
 
     if (websiteError || !website) throw new Error('Website not found');
@@ -28,7 +29,8 @@ export async function submitOrder({ siteSlug, cartDetails, customerDetails, tota
       .select('id')
       .eq('website_id', websiteId)
       .eq('email', customerDetails.email)
-      .single();
+      .limit(1)
+      .maybeSingle();
 
     let customerId;
 
@@ -70,7 +72,8 @@ export async function submitOrder({ siteSlug, cartDetails, customerDetails, tota
         .select('id')
         .eq('website_id', websiteId)
         .eq('name', item.name)
-        .single();
+        .limit(1)
+        .maybeSingle();
 
       if (existingProduct) {
         productMap.set(item.id, existingProduct.id);

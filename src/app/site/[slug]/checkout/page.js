@@ -29,6 +29,7 @@ export default async function LiveCheckoutPage(props) {
     .from('websites')
     .select(`is_published, website_data, template:templates ( name )`)
     .eq('site_slug', slug)
+    .limit(1)
     .single();
 
   if (error || !site || !site.is_published) {

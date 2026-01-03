@@ -23,3 +23,4 @@ https://nextjs.org/telemetry
  GET /templates/flara/checkout 200 in 74ms (compile: 4ms, render: 70ms)
  GET /templates/flara/checkout 200 in 302ms (compile: 187ms, render: 115ms)
  GET /templates/flara/checkout 200 in 151ms (compile: 13ms, render: 138ms)
+ ✓ Compiled in 1059ms
