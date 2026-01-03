@@ -21,7 +21,7 @@ const templateDataMap = {
 };
 
 // Main component updated to read site_id
-export default function EditorLayout({ templateName, mode, websiteId: propWebsiteId }) {
+export default function EditorLayout({ templateName, mode, websiteId: propWebsiteId, initialData }) {
   const [view, setView] = useState('desktop');
   const [activeTab, setActiveTab] = useState('website');
   const iframeRef = useRef(null);
@@ -41,8 +41,13 @@ export default function EditorLayout({ templateName, mode, websiteId: propWebsit
     return JSON.parse(JSON.stringify(templateDataMap[templateName] || {}));
   }, [templateName]);
 
-  const [businessData, setBusinessData] = useState(defaultData);
-  const [history, setHistory] = useState([defaultData]);
+  const [businessData, setBusinessData] = useState(() => {
+     // Priority: initialData (from DB) > defaultData
+     // Note: LocalStorage logic is in useEffect, but we might want to initialize with initialData first
+     return initialData || defaultData;
+  });
+
+  const [history, setHistory] = useState([initialData || defaultData]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // Load data
@@ -55,8 +60,13 @@ export default function EditorLayout({ templateName, mode, websiteId: propWebsit
         setBusinessData(parsedData); 
         setHistory([parsedData]);
         setHistoryIndex(0);
+      } else if (initialData) {
+         // If we have initialData passed prop (e.g. from Dashboard), use it.
+         setBusinessData(initialData);
+         setHistory([initialData]);
+         setHistoryIndex(0);
       } else {
-        // If no local data, use default
+        // If no local data and no initialData, use default
         setBusinessData(defaultData);
         setHistory([defaultData]);
         setHistoryIndex(0);

@@ -96,7 +96,9 @@ export default function DashboardLayout({ children }) {
       </header>
 
       {/* Main Content */}
-      <main className="mt-5 p-10 rounded-[2rem] bg-[#fff] font-sans text-[#333333] min-h-[500px]">
+      <main className={`mt-5 rounded-[2rem] bg-[#fff] font-sans text-[#333333] min-h-[500px] ${
+        pathname === '/dashboard/website' ? 'p-0 overflow-hidden' : 'p-10'
+      }`}>
         {children}
       </main>
     </div>
