@@ -13,7 +13,7 @@ import {
   Package,
   Eye
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabaseClient';
 import * as Dialog from '@radix-ui/react-dialog';
 import { updateOrderStatus, addOrderLogistics } from '@/app/actions/orderActions';
 
@@ -230,7 +230,6 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     setLoading(true);
-    const supabase = createClient();
 
     // 1. Get User
     const { data: { user } } = await supabase.auth.getUser();
