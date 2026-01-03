@@ -144,28 +144,38 @@ export async function updateOrderStatus(orderId, newStatus) {
 }
 
 export async function addOrderLogistics(orderId, websiteId, trackingDetails) {
-    // We use client_analytics to store side-car data for orders as 'logistics' event
+    // Updated: Insert into 'deliveries' table
+    // trackingDetails has { provider, trackingNumber, date }
+    // We map date -> created_at or ignore, usually created_at is auto.
     const { error } = await supabaseAdmin
-        .from('client_analytics')
+        .from('deliveries')
         .insert({
-            website_id: websiteId,
             order_id: orderId,
-            event_type: 'logistics',
-            location: trackingDetails // Storing { provider, trackingNumber, url }
+            provider: trackingDetails.provider,
+            tracking_number: trackingDetails.trackingNumber,
+            // tracking_url can be derived or passed if available
+            status: 'shipped'
         });
 
     if (error) throw new Error(error.message);
+
+    // Also update order status to shipped
+    await supabaseAdmin.from('orders').update({ status: 'shipped' }).eq('id', orderId);
+
     return { success: true };
 }
 
 export async function getOrderLogistics(orderId) {
      const { data, error } = await supabaseAdmin
-        .from('client_analytics')
-        .select('location')
+        .from('deliveries')
+        .select('*')
         .eq('order_id', orderId)
-        .eq('event_type', 'logistics')
-        .maybeSingle(); // We assume one logistics entry per order for now
+        .maybeSingle();
 
     if (error) return null;
-    return data ? data.location : null;
+    return data ? {
+        provider: data.provider,
+        trackingNumber: data.tracking_number,
+        date: data.created_at
+    } : null;
 }

@@ -242,30 +242,27 @@ export default function OrdersPage() {
         return;
     }
 
-    // 3. Get Orders
+    // 3. Get Orders and Deliveries
     const { data: ordersData, error } = await supabase
         .from('orders')
         .select(`
             *,
             customers ( name, email, shipping_address ),
-            order_items ( quantity, price, products ( name, image_url ) )
+            order_items ( quantity, price, products ( name, image_url ) ),
+            deliveries ( provider, tracking_number, status, created_at )
         `)
         .eq('website_id', website.id)
         .order('created_at', { ascending: false });
 
-    // 4. Get Logistics Sidecar Data
-    // We fetch all logistics events for this website to merge
-    const { data: logisticsData } = await supabase
-        .from('client_analytics')
-        .select('order_id, location')
-        .eq('website_id', website.id)
-        .eq('event_type', 'logistics');
-
     if (ordersData) {
-        // Merge logistics
+        // Map deliveries to the 'logistics' format expected by the UI
         const merged = ordersData.map(o => ({
             ...o,
-            logistics: logisticsData?.find(l => l.order_id === o.id)?.location
+            logistics: o.deliveries && o.deliveries[0] ? {
+                provider: o.deliveries[0].provider,
+                trackingNumber: o.deliveries[0].tracking_number,
+                date: o.deliveries[0].created_at
+            } : null
         }));
         setOrders(merged);
 
