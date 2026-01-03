@@ -177,8 +177,13 @@ useEffect(() => {
     }
   };
 
-  // Send data to iframe, but not on every keystroke (debounced)
+  // Send data to iframe immediately on initial load and when businessData changes (debounced)
   useEffect(() => {
+    // Immediate send if it's the first load or if needed
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+        sendDataToIframe(businessData);
+    }
+
     const handler = setTimeout(() => {
       sendDataToIframe(businessData);
     }, 250); 

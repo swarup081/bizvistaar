@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 import {
   Monitor, Smartphone, ChevronDown, Info, Check, RotateCcw // Import icons
 } from 'lucide-react';
@@ -147,6 +149,8 @@ export default function EditorTopNav({
 }) {
   const [isPageDropdownOpen, setIsPageDropdownOpen] = useState(false);
   const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const router = useRouter();
   
   const currentPageName = pages.find(p => p.path === activePage)?.name || 'Home';
   const siteUrl = `your-site-slug.bizvistaar.com`; // Placeholder URL
@@ -159,6 +163,47 @@ export default function EditorTopNav({
   const handleRestartConfirm = () => {
     onRestart();
     setIsRestartModalOpen(false);
+  };
+
+  const handlePublish = async () => {
+    if (isPublishing) return;
+    setIsPublishing(true);
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+
+        // Check subscription
+        const { data: sub } = await supabase
+            .from('subscriptions')
+            .select('status')
+            .eq('user_id', user.id)
+            .in('status', ['active', 'trialing'])
+            .maybeSingle();
+
+        if (sub) {
+            // User is subscribed, publish directly
+            const { error } = await supabase.functions.invoke('publish-website', {
+                body: { websiteId }
+            });
+            if (error) {
+                alert('Failed to publish. Please try again.');
+                console.error(error);
+            } else {
+                alert('Website published successfully!');
+            }
+        } else {
+            // Not subscribed, go to pricing
+            router.push(`/get-started/pricing?site_id=${websiteId}`);
+        }
+    } catch (error) {
+        console.error('Publish error:', error);
+        alert('An error occurred.');
+    } finally {
+        setIsPublishing(false);
+    }
   };
 
   return (
@@ -239,12 +284,22 @@ export default function EditorTopNav({
           </Tooltip>
           
           {/* --- UPDATED PUBLISH LINK --- */}
-          <Link
-            href={`/get-started/pricing?site_id=${websiteId}`} // Pass site_id
-            className="flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-6 py-2 rounded-4xl hover:bg-blue-700 transition-colors"
-          >
-            Publish
-          </Link>
+          {mode === 'dashboard' ? (
+              <button
+                onClick={handlePublish}
+                disabled={isPublishing}
+                className="flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-6 py-2 rounded-4xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {isPublishing ? 'Publishing...' : 'Publish'}
+              </button>
+          ) : (
+              <Link
+                href={`/get-started/pricing?site_id=${websiteId}`} // Pass site_id
+                className="flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-6 py-2 rounded-4xl hover:bg-blue-700 transition-colors"
+              >
+                Publish
+              </Link>
+          )}
           {/* --- END OF CHANGE --- */}
 
         </div>
