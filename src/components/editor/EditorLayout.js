@@ -280,7 +280,7 @@ useEffect(() => {
   };
 
   return (
-    <div className={`grid grid-cols-[1fr_auto] bg-gray-50 ${mode === 'dashboard' ? 'h-[85vh] rounded-xl overflow-hidden border border-gray-200' : 'h-screen'}`}>
+    <div className={`grid grid-cols-[1fr_auto] bg-gray-50 ${mode === 'dashboard' ? 'h-full' : 'h-screen'}`}>
       
       {/* Column 1: Main Content (Nav + Preview) */}
       <div className={`flex flex-col overflow-hidden ${mode === 'dashboard' ? 'h-full' : 'h-screen'}`}>
