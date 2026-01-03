@@ -26,23 +26,44 @@ export default function WebsiteDashboardPage() {
         // 2. Fetch website for this user
         const { data: site, error: dbError } = await supabase
           .from('websites')
-          .select(`
-              id,
-              site_slug,
-              website_data,
-              template:templates ( name )
-          `)
+          .select('id, site_slug, template, website_data')
           .eq('user_id', user.id)
           .maybeSingle();
 
         if (dbError) {
-             console.error('Error fetching website:', dbError);
+             console.error('Error fetching website:', JSON.stringify(dbError, null, 2));
              setError("Failed to load website.");
         } else if (site) {
+             let templateName = 'flara'; // Default
+
+             // If 'template' is just an ID (or we didn't join), we might need to fetch the name.
+             // However, checking the previous code, it assumed 'template' was an object.
+             // If we select just 'template', it might be the FK ID.
+             // Let's assume it IS the FK ID now because we removed the join.
+
+             if (site.template) {
+                 // Check if it's already an object (if Supabase returned it expanded despite no join syntax, unlikely)
+                 // or if it's an ID.
+                 if (typeof site.template === 'object' && site.template.name) {
+                     templateName = site.template.name;
+                 } else {
+                     // Fetch template name
+                     const { data: templateData, error: templateError } = await supabase
+                        .from('templates')
+                        .select('name')
+                        .eq('id', site.template)
+                        .maybeSingle();
+
+                     if (templateData) {
+                         templateName = templateData.name;
+                     }
+                 }
+             }
+
              setWebsite({
                  id: site.id,
                  slug: site.site_slug,
-                 templateName: site.template?.name || 'flara', // Default fallback
+                 templateName: templateName,
                  data: site.website_data
              });
         } else {
