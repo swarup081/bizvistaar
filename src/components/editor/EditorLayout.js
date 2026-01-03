@@ -21,15 +21,15 @@ const templateDataMap = {
 };
 
 // Main component updated to read site_id
-export default function EditorLayout({ templateName }) {
+export default function EditorLayout({ templateName, mode, websiteId: propWebsiteId }) {
   const [view, setView] = useState('desktop');
   const [activeTab, setActiveTab] = useState('website');
   const iframeRef = useRef(null);
   const [activeAccordion, setActiveAccordion] = useState('global');
   
-  // Get websiteId from URL query
+  // Get websiteId from URL query or prop
   const searchParams = useSearchParams();
-  const websiteId = searchParams.get('site_id');
+  const websiteId = propWebsiteId || searchParams.get('site_id');
   
   const [saveStatus, setSaveStatus] = useState('Saved'); // To show save status
   const debounceTimer = useRef(null); // For debouncing save
@@ -265,13 +265,14 @@ useEffect(() => {
   };
 
   return (
-    <div className="grid grid-cols-[1fr_auto] h-screen bg-gray-50">
+    <div className={`grid grid-cols-[1fr_auto] bg-gray-50 ${mode === 'dashboard' ? 'h-[85vh] rounded-xl overflow-hidden border border-gray-200' : 'h-screen'}`}>
       
       {/* Column 1: Main Content (Nav + Preview) */}
-      <div className="flex flex-col h-screen overflow-hidden">
+      <div className={`flex flex-col overflow-hidden ${mode === 'dashboard' ? 'h-full' : 'h-screen'}`}>
         
         <div className="flex-shrink-0">
           <EditorTopNav
+            mode={mode}
             templateName={templateName}
             websiteId={websiteId} // Pass websiteId to the nav
             saveStatus={saveStatus} // Pass saveStatus to the nav
@@ -308,7 +309,7 @@ useEffect(() => {
       </div>
 
       {/* Column 2: Sidebar (Full Height) */}
-      <div className="h-screen bg-white border-l border-gray-200 overflow-y-auto">
+      <div className={`bg-white border-l border-gray-200 overflow-y-auto ${mode === 'dashboard' ? 'h-full' : 'h-screen'}`}>
         <EditorSidebar 
           activeTab={activeTab} 
           onTabChange={setActiveTab} 

@@ -130,6 +130,7 @@ const RestartConfirmationModal = ({ isOpen, onClose, onConfirm }) => {
 
 
 export default function EditorTopNav({ 
+    mode, // 'dashboard' or undefined/null
     templateName, 
     websiteId, // <-- NEW PROP
     saveStatus, // <-- NEW PROP
@@ -166,20 +167,28 @@ export default function EditorTopNav({
       <div className="w-full h-[65px] border-b border-gray-200 px-4 flex items-center justify-between">
         {/* Left Side */}
         <div className="flex items-center gap-6">
-          <Link href="/">
-            <span className="text-xl font-bold text-gray-900 cursor-pointer">
-              BizVistaar
-            </span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Tooltip
-              title="Hire a Professional"
-              description="Need help with design or content? Our experts are here to assist."
-            >
-              <NavButton>Hire a Professional</NavButton>
-            </Tooltip>
-            <NavButton>Help</NavButton>
-          </div>
+          {mode !== 'dashboard' ? (
+            <>
+              <Link href="/">
+                <span className="text-xl font-bold text-gray-900 cursor-pointer">
+                  BizVistaar
+                </span>
+              </Link>
+              <div className="flex items-center gap-2">
+                <Tooltip
+                  title="Hire a Professional"
+                  description="Need help with design or content? Our experts are here to assist."
+                >
+                  <NavButton>Hire a Professional</NavButton>
+                </Tooltip>
+                <NavButton>Help</NavButton>
+              </div>
+            </>
+          ) : (
+             <span className="text-xl font-bold text-gray-900">
+               Website Editor
+             </span>
+          )}
         </div>
 
         {/* Right Side: Actions */}
