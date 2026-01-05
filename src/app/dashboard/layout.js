@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutGrid, 
   Globe, 
@@ -11,14 +11,22 @@ import {
   Bell, 
   MessageCircle, 
   User,
-  Tag
+  Tag,
+  LogOut,
+  ChevronDown
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function DashboardLayout({ children }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+
+  const [userEmail, setUserEmail] = useState('');
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef(null);
 
   const navItems = [
     { name: 'Dashboard', icon: LayoutGrid, href: '/dashboard' },
@@ -38,20 +46,43 @@ export default function DashboardLayout({ children }) {
       }
     };
 
+    const fetchUser = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            setUserEmail(user.email);
+        }
+    };
+
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    fetchUser();
+
+    // Click outside listener
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+        window.removeEventListener('scroll', handleScroll);
+        document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
+  const handleLogout = async () => {
+      await supabase.auth.signOut();
+      router.push('/login');
+  };
+
   return (
-    // The outer container has p-7 (28px) padding.
-    // To make the header full-width when scrolled, we use negative margins to counteract the padding.
     <div className="min-h-screen p-7 bg-[#F3F4F6] font-sans text-[#333333]">
       {/* Header */}
       <header 
         className={`sticky top-0 z-50 bg-white flex items-center justify-between transition-all duration-300 ease-in-out
           ${isScrolled 
-            ? 'rounded-none shadow-md w-[calc(100%+3.5rem)] -mx-7 px-10 py-4' // Full width, remove rounded, adjust padding
-            : 'rounded-full shadow-sm px-6 py-4' // Default floating state
+            ? 'rounded-none shadow-md w-[calc(100%+3.5rem)] -mx-7 px-10 py-4'
+            : 'rounded-full shadow-sm px-6 py-4'
           }`}
       >
         {/* Left: Logo */}
@@ -83,15 +114,51 @@ export default function DashboardLayout({ children }) {
         {/* Right: User Controls */}
         <div className="flex items-center gap-4">
          
-        <button className="p-2 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
+          <button className="p-2 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
             <Bell size={20} />
           </button>
-          <div className="h-10 w-10 rounded-full bg-gray-300 overflow-hidden border-2 border-white shadow-sm">
-             {/* Placeholder User Image */}
-             <div className="h-full w-full bg-gray-200 flex items-center justify-center text-gray-500">
-               <User size={20} />
-             </div>
+
+          {/* Profile Dropdown */}
+          <div className="relative" ref={profileRef}>
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex items-center gap-3 pl-1 pr-3 py-1 rounded-full border border-gray-200 hover:bg-gray-50 transition-all bg-white"
+              >
+                <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-[#8A63D2] to-blue-400 flex items-center justify-center text-white shadow-sm">
+                   <User size={16} />
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-gray-700 hidden sm:block max-w-[100px] truncate">
+                        {userEmail || 'Account'}
+                    </span>
+                    <ChevronDown size={14} className="text-gray-400" />
+                </div>
+              </button>
+
+              {isProfileOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-2 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                      <div className="px-3 py-2 border-b border-gray-50 mb-1">
+                          <p className="text-xs text-gray-400 font-medium">Signed in as</p>
+                          <p className="text-sm font-bold text-gray-800 truncate">{userEmail}</p>
+                      </div>
+
+                      {/* Placeholder Links */}
+                      <button className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-2">
+                          <User size={16} /> Profile
+                      </button>
+
+                      <div className="h-px bg-gray-50 my-1"></div>
+
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
+                      >
+                          <LogOut size={16} /> Sign out
+                      </button>
+                  </div>
+              )}
           </div>
+
         </div>
       </header>
 

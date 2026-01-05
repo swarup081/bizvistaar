@@ -1,29 +1,37 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, X, Loader2, Trash2, Edit2, Check, Save } from 'lucide-react';
-import { addCategory } from '@/app/actions/productActions';
+import { Plus, Loader2, Trash2 } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
+import { syncWebsiteDataClient } from '@/lib/websiteSync';
 
-export default function CategoryManager({ categories, onUpdate }) {
+export default function CategoryManager({ categories, onUpdate, websiteId }) {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [editingId, setEditingId] = useState(null);
 
   const handleAddCategory = async (e) => {
     e.preventDefault();
-    if (!newCategoryName.trim()) return;
+    if (!newCategoryName.trim() || !websiteId) return;
 
     setLoading(true);
     try {
-      const res = await addCategory(newCategoryName);
-      if (res.success) {
-        setNewCategoryName('');
-        onUpdate();
-      } else {
-        alert('Failed: ' + res.error);
-      }
+      const { error } = await supabase
+        .from('categories')
+        .insert({
+            name: newCategoryName,
+            website_id: websiteId
+        });
+
+      if (error) throw error;
+
+      await syncWebsiteDataClient(websiteId);
+
+      setNewCategoryName('');
+      onUpdate();
+
     } catch (err) {
       console.error(err);
+      alert('Failed: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -47,7 +55,7 @@ export default function CategoryManager({ categories, onUpdate }) {
         />
         <button
           type="submit"
-          disabled={loading || !newCategoryName.trim()}
+          disabled={loading || !newCategoryName.trim() || !websiteId}
           className="px-6 py-2 bg-[#8A63D2] text-white rounded-lg font-medium hover:bg-[#7854bc] disabled:opacity-50 transition-colors flex items-center gap-2 text-sm"
         >
           {loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={18} />}
@@ -73,12 +81,6 @@ export default function CategoryManager({ categories, onUpdate }) {
               </div>
 
               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                {/* Edit placeholder */}
-                {/*
-                <button className="p-2 text-gray-400 hover:text-blue-500 bg-gray-50 rounded-lg" title="Rename">
-                   <Edit2 size={16} />
-                </button>
-                */}
                 <button className="p-2 text-gray-400 hover:text-red-500 bg-gray-50 rounded-lg hover:bg-red-50" title="Delete (Coming Soon)">
                    <Trash2 size={16} />
                 </button>

@@ -24,9 +24,12 @@ export default function ProductDetailPage() {
     const [quantity, setQuantity] = useState(1);
     
     // --- Stock Logic ---
-    const stock = product?.stock !== undefined ? product.stock : Infinity;
-    const isOutOfStock = stock === 0;
-    const isLowStock = stock > 0 && stock < 10;
+    const rawStock = product?.stock;
+    const isUnlimited = rawStock === -1;
+    const stock = isUnlimited ? Infinity : (rawStock !== undefined ? rawStock : Infinity);
+
+    const isOutOfStock = !isUnlimited && stock === 0;
+    const isLowStock = !isUnlimited && stock > 0 && stock < 10;
 
     // --- "You Might Also Like" Fix ---
     let relatedProducts = [];

@@ -3,9 +3,10 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, UploadCloud, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { addProduct } from '@/app/actions/productActions';
+import { supabase } from '@/lib/supabaseClient';
+import { syncWebsiteDataClient } from '@/lib/websiteSync';
 
-export default function AddProductDialog({ isOpen, onClose, onProductAdded, categories }) {
+export default function AddProductDialog({ isOpen, onClose, onProductAdded, categories, websiteId }) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -33,12 +34,9 @@ export default function AddProductDialog({ isOpen, onClose, onProductAdded, cate
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    // Logic: If user types in stock, ensure it's positive.
     if (name === 'stock') {
-        if (value.includes('-')) return; // Prevent negative input
+        if (value.includes('-')) return;
     }
-
     setFormData(prev => ({
         ...prev,
         [name]: type === 'checkbox' ? checked : value
@@ -60,26 +58,49 @@ export default function AddProductDialog({ isOpen, onClose, onProductAdded, cate
     e.preventDefault();
     setLoading(true);
 
-    try {
-      const res = await addProduct({
-        ...formData,
-        price: parseFloat(formData.price),
-        // If unlimited is checked, logic inside action sets it to -1
-        // We pass local state as is.
-        stock: formData.stock,
-        isUnlimited: formData.isUnlimited,
-        categoryId: formData.categoryId ? parseInt(formData.categoryId) : null
-      });
+    if (!websiteId) {
+        alert("System Error: No Website ID found. Please reload.");
+        setLoading(false);
+        return;
+    }
 
-      if (res.success) {
-        onProductAdded();
-        onClose();
-      } else {
-        alert('Failed to add product: ' + res.error);
+    try {
+      // 1. Prepare Data
+      let finalStock = parseInt(formData.stock);
+      if (isNaN(finalStock)) finalStock = -1;
+      if (formData.isUnlimited) finalStock = -1;
+      if (finalStock < 0) finalStock = -1;
+
+      const payload = {
+        name: formData.name,
+        price: parseFloat(formData.price),
+        category_id: (!formData.categoryId || formData.categoryId === 'uncategorized') ? null : parseInt(formData.categoryId),
+        description: formData.description,
+        image_url: formData.imageUrl,
+        stock: finalStock,
+        website_id: websiteId
+      };
+
+      // 2. Insert Client Side
+      const { data, error } = await supabase
+        .from('products')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (error) {
+          throw new Error(error.message);
       }
+
+      // 3. Sync JSON
+      await syncWebsiteDataClient(websiteId);
+
+      onProductAdded();
+      onClose();
+
     } catch (err) {
       console.error(err);
-      alert('An unexpected error occurred');
+      alert('Failed to add product: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -164,7 +185,6 @@ export default function AddProductDialog({ isOpen, onClose, onProductAdded, cate
                         <span className="text-xs text-gray-500">Unlimited</span>
                      </label>
                  </div>
-                 {/* Note to user */}
                  {formData.isUnlimited ? (
                      <div className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-500 text-sm italic">
                          Stock is unlimited
@@ -180,7 +200,6 @@ export default function AddProductDialog({ isOpen, onClose, onProductAdded, cate
                     className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
                     />
                  )}
-                 <p className="text-[10px] text-gray-400">Leave blank or check unlimited for made-to-order items.</p>
               </div>
             </div>
 
