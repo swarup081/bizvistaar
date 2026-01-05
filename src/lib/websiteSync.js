@@ -9,7 +9,7 @@ export async function syncWebsiteDataClient(websiteId) {
             .from('products')
             .select('*')
             .eq('website_id', websiteId)
-            .order('created_at', { ascending: false }); // Latest first
+            .order('id', { ascending: false }); // Latest first
 
         const { data: categories, error: catError } = await supabase
             .from('categories')

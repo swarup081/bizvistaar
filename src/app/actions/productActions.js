@@ -210,7 +210,7 @@ export async function getProducts({ page = 1, limit = 10, search = '', categoryI
         categories ( name )
       `)
       .eq('website_id', websiteId)
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: false });
 
     if (search) {
       query = query.ilike('name', `%${search}%`);

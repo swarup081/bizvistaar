@@ -73,7 +73,7 @@ export default function ProductsPage() {
             .from('products')
             .select('*')
             .eq('website_id', websiteId)
-            .order('created_at', { ascending: false });
+            .order('id', { ascending: false });
 
         if (searchTerm) {
             query = query.ilike('name', `%${searchTerm}%`);
