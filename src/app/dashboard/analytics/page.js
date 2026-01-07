@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import {
   BarChart3,
@@ -9,7 +9,9 @@ import {
   Calendar,
   ArrowUp,
   ArrowDown,
-  Globe
+  Globe,
+  ChevronDown,
+  AlertCircle
 } from "lucide-react";
 import AnalyticsOverview from "@/components/dashboard/analytics/AnalyticsOverview";
 import RevenueChart from "@/components/dashboard/analytics/RevenueChart";
@@ -17,14 +19,20 @@ import VisitorsChart from "@/components/dashboard/analytics/VisitorsChart";
 import TopProducts from "@/components/dashboard/analytics/TopProducts";
 import TopPages from "@/components/dashboard/analytics/TopPages";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+// Safe initialization
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+const supabase = (supabaseUrl && supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [dateRange, setDateRange] = useState("30d");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const [data, setData] = useState({
     totalRevenue: 0,
     totalOrders: 0,
@@ -36,38 +44,78 @@ export default function AnalyticsPage() {
     topPages: [],
   });
 
+  const dropdownRef = useRef(null);
+
   useEffect(() => {
+    // Close dropdown on outside click
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) {
+      console.error("Supabase client not initialized. Missing env vars.");
+      setError("Configuration Error: Missing Supabase credentials.");
+      setLoading(false);
+      return;
+    }
     fetchAnalytics();
   }, [dateRange]);
 
   const fetchAnalytics = async () => {
     setLoading(true);
-    try {
-      // 1. Get User & Website
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
+    setError(null);
+    console.log("--- Starting Analytics Fetch ---");
+    console.log("Date Range:", dateRange);
 
-      const { data: website } = await supabase
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        console.warn("User not authenticated or auth error:", authError);
+        // In a real app, maybe redirect. Here just stop.
+        setLoading(false);
+        return;
+      }
+      console.log("User ID:", user.id);
+
+      const { data: website, error: siteError } = await supabase
         .from("websites")
         .select("id")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (!website) {
+      if (siteError) {
+        console.error("Error fetching website:", siteError);
+        setError("Failed to load website data.");
         setLoading(false);
         return;
       }
 
-      // 2. Calculate Date Range
+      if (!website) {
+        console.warn("No website found for user.");
+        setLoading(false); // Render empty state
+        return;
+      }
+      console.log("Website ID:", website.id);
+
+      // Date Calculation
       const now = new Date();
       let startDate = new Date();
       if (dateRange === "7d") startDate.setDate(now.getDate() - 7);
       if (dateRange === "30d") startDate.setDate(now.getDate() - 30);
       if (dateRange === "90d") startDate.setDate(now.getDate() - 90);
+      if (dateRange === "year") startDate.setFullYear(now.getFullYear(), 0, 1); // This Year
 
       const startDateISO = startDate.toISOString();
+      console.log("Fetching data since:", startDateISO);
 
-      // 3. Parallel Fetching
+      // Parallel Fetch
       const [ordersRes, eventsRes] = await Promise.all([
         supabase
           .from("orders")
@@ -83,53 +131,52 @@ export default function AnalyticsPage() {
           .gte("timestamp", startDateISO)
       ]);
 
+      if (ordersRes.error) console.error("Error fetching orders:", ordersRes.error);
+      if (eventsRes.error) console.error("Error fetching events:", eventsRes.error);
+
       const orders = ordersRes.data || [];
       const events = eventsRes.data || [];
 
-      // 4. Fetch Order Items (for Top Products)
+      console.log(`Fetched ${orders.length} orders and ${events.length} events.`);
+
+      // Fetch Order Items
       let orderItems = [];
       const orderIds = orders.map(o => o.id);
       if (orderIds.length > 0) {
-        const { data: items } = await supabase
+        const { data: items, error: itemsError } = await supabase
           .from("order_items")
           .select("quantity, price, products(name)")
           .in("order_id", orderIds);
+
+        if (itemsError) console.error("Error fetching items:", itemsError);
         orderItems = items || [];
       }
 
-      // --- CALCULATIONS ---
-
-      // A. Totals
+      // Calculations
       const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
       const totalOrders = orders.length;
 
-      // B. Unique Visitors
       const uniqueVisitors = new Set();
       events.forEach(e => {
         if (e.location && e.location.visitor_id) {
           uniqueVisitors.add(e.location.visitor_id);
-        } else {
-           // If no visitor_id, use IP if available, or just fallback.
-           // Since we can't reliably dedup without ID, we might undercount or overcount.
-           // We'll count distinct IPs if available.
-           if (e.location && e.location.ip) uniqueVisitors.add(e.location.ip);
+        } else if (e.location && e.location.ip) {
+          uniqueVisitors.add(e.location.ip);
         }
       });
-      // Fallback: if 0 unique visitors but we have events, assume at least some visitors.
-      // E.g. 1 visitor per 5 pageviews? Or just use pageviews.
-      // Let's stick to unique set size. If 0 and events > 0, maybe the tracker failed to send ID.
-      const totalVisitors = uniqueVisitors.size || (events.length > 0 ? Math.ceil(events.length / 3) : 0);
+      // Fallback logic
+      const totalVisitors = uniqueVisitors.size || (events.length > 0 ? Math.ceil(events.length / 2) : 0);
 
-      // C. Conversion
       const conversionRate = totalVisitors > 0 ? ((totalOrders / totalVisitors) * 100).toFixed(1) : "0.0";
 
-      // D. Charts
-      // Helper to group by date
+      // Grouping
       const groupByDate = (items, dateKey, valueKey = null, count = false) => {
         const map = {};
-        // Initialize all dates in range to 0
         const d = new Date(startDate);
-        while (d <= now) {
+        // Ensure we cover up to today
+        const end = new Date();
+
+        while (d <= end) {
             const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             map[key] = 0;
             d.setDate(d.getDate() + 1);
@@ -137,6 +184,7 @@ export default function AnalyticsPage() {
 
         items.forEach(item => {
             const itemDate = new Date(item[dateKey]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            // Only add if key exists (within range) - safe check
             if (map[itemDate] !== undefined) {
                 if (count) map[itemDate] += 1;
                 else map[itemDate] += (Number(item[valueKey]) || 0);
@@ -146,10 +194,9 @@ export default function AnalyticsPage() {
       };
 
       const revenueData = groupByDate(orders, 'created_at', 'total_amount');
-      const visitorsData = groupByDate(events, 'timestamp', null, true); // This counts Page Views actually.
-      // If we want Unique Visitors per day, it's more complex. For now "Traffic" = Page Views is standard for simple dashboards.
+      const visitorsData = groupByDate(events, 'timestamp', null, true);
 
-      // E. Top Products
+      // Top Products
       const productMap = {};
       orderItems.forEach(item => {
         const name = item.products?.name || "Unknown Product";
@@ -160,7 +207,7 @@ export default function AnalyticsPage() {
         .sort((a, b) => b.sales - a.sales)
         .slice(0, 5);
 
-      // F. Top Pages
+      // Top Pages
       const pageMap = {};
       events.forEach(e => {
          const path = e.path || '/';
@@ -183,10 +230,18 @@ export default function AnalyticsPage() {
       });
 
     } catch (err) {
-      console.error("Analytics Error:", err);
+      console.error("Critical Analytics Error:", err);
+      setError("An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const rangeLabels = {
+    '7d': 'Last 7 Days',
+    '30d': 'Last 30 Days',
+    '90d': 'Last 90 Days',
+    'year': 'This Year'
   };
 
   return (
@@ -198,26 +253,48 @@ export default function AnalyticsPage() {
           <p className="text-gray-500 mt-1">Monitor your store's performance and visitor stats.</p>
         </div>
 
-        {/* Date Filter */}
-        <div className="flex bg-white rounded-lg p-1 shadow-sm border border-gray-200 self-start md:self-auto">
-          {['7d', '30d', '90d'].map((r) => (
+        {/* Date Filter Dropdown */}
+        <div className="relative" ref={dropdownRef}>
             <button
-              key={r}
-              onClick={() => setDateRange(r)}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
-                dateRange === r
-                  ? 'bg-[#8A63D2] text-white shadow-sm'
-                  : 'text-gray-500 hover:bg-gray-50'
-              }`}
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
             >
-              Last {r.replace('d', ' Days')}
+               <Calendar size={16} className="text-gray-500"/>
+               {rangeLabels[dateRange]}
+               <ChevronDown className="h-4 w-4 text-gray-500" />
             </button>
-          ))}
+
+            {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-10 overflow-hidden">
+                    {Object.keys(rangeLabels).map((key) => (
+                        <button
+                            key={key}
+                            onClick={() => {
+                                setDateRange(key);
+                                setIsDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                                dateRange === key ? 'text-[#8A63D2] font-medium bg-purple-50' : 'text-gray-700'
+                            }`}
+                        >
+                            {rangeLabels[key]}
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
       </div>
 
-      {loading ? (
-        <div className="h-64 flex items-center justify-center text-gray-400">Loading analytics...</div>
+      {error ? (
+         <div className="rounded-2xl bg-red-50 p-6 flex items-center gap-4 text-red-700 border border-red-100">
+            <AlertCircle />
+            <p>{error}</p>
+         </div>
+      ) : loading ? (
+        <div className="h-64 flex flex-col items-center justify-center text-gray-400 gap-3">
+             <div className="w-8 h-8 border-4 border-purple-200 border-t-[#8A63D2] rounded-full animate-spin"></div>
+             <p className="text-sm font-medium">Loading analytics...</p>
+        </div>
       ) : (
         <>
            <AnalyticsOverview

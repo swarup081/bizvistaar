@@ -8,7 +8,7 @@
 
  ✓ Starting...
 [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
- ✓ Ready in 3.1s
+ ✓ Ready in 2.4s
  ○ Compiling /dashboard/analytics ...
- GET /dashboard/analytics 200 in 14.3s (compile: 13.6s, render: 712ms)
+ GET /dashboard/analytics 200 in 11.1s (compile: 10.3s, render: 763ms)
 [?25h

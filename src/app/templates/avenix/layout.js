@@ -6,7 +6,7 @@ import { Header, Footer } from './components.js';
 import { CartProvider, useCart } from './cartContext.js';
 import { TemplateContext } from './templateContext.js';
 import { Editable } from '@/components/editor/Editable';
-import AnalyticsTracker from '@/components/analytics/AnalyticsTracker';
+import AnalyticsTracker from '@/components/dashboard/analytics/AnalyticsTracker';
 
 function AvenixContent({ children, serverData, websiteId }) {
     const [businessData, setBusinessData] = useState(serverData || initialBusinessData); 
