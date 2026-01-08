@@ -11,13 +11,16 @@ import {
   ArrowDown,
   Globe,
   ChevronDown,
-  AlertCircle
+  AlertCircle,
+  CreditCard,
+  MousePointerClick
 } from "lucide-react";
 import AnalyticsOverview from "@/components/dashboard/analytics/AnalyticsOverview";
 import RevenueChart from "@/components/dashboard/analytics/RevenueChart";
 import VisitorsChart from "@/components/dashboard/analytics/VisitorsChart";
 import TopProducts from "@/components/dashboard/analytics/TopProducts";
 import TopPages from "@/components/dashboard/analytics/TopPages";
+import FunnelChart from "@/components/dashboard/analytics/FunnelChart";
 
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
@@ -30,16 +33,17 @@ export default function AnalyticsPage() {
     totalOrders: 0,
     totalVisitors: 0,
     conversionRate: 0,
+    avgOrderValue: 0,
     revenueData: [],
     visitorsData: [],
     topProducts: [],
     topPages: [],
+    funnelData: []
   });
 
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    // Close dropdown on outside click
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
@@ -51,7 +55,6 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     if (!supabase) {
-      console.error("Supabase client not initialized.");
       setError("Configuration Error: Missing Supabase client.");
       setLoading(false);
       return;
@@ -62,23 +65,17 @@ export default function AnalyticsPage() {
   const fetchAnalytics = async () => {
     setLoading(true);
     setError(null);
-    console.log("--- Starting Analytics Fetch ---");
-    console.log("Date Range:", dateRange);
 
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-
       if (authError || !user) {
-        console.warn("User not authenticated or auth error:", authError);
-        // In a real app, maybe redirect. Here just stop.
         setLoading(false);
         return;
       }
-      console.log("User ID:", user.id);
 
       const { data: website, error: siteError } = await supabase
         .from("websites")
-        .select("id")
+        .select("id, site_slug")
         .eq("user_id", user.id)
         .limit(1)
         .maybeSingle();
@@ -91,11 +88,9 @@ export default function AnalyticsPage() {
       }
 
       if (!website) {
-        console.warn("No website found for user.");
-        setLoading(false); // Render empty state
+        setLoading(false);
         return;
       }
-      console.log("Website ID:", website.id);
 
       // Date Calculation
       const now = new Date();
@@ -103,81 +98,105 @@ export default function AnalyticsPage() {
       if (dateRange === "7d") startDate.setDate(now.getDate() - 7);
       if (dateRange === "30d") startDate.setDate(now.getDate() - 30);
       if (dateRange === "90d") startDate.setDate(now.getDate() - 90);
-      if (dateRange === "year") startDate.setFullYear(now.getFullYear(), 0, 1); // This Year
+      if (dateRange === "year") startDate.setFullYear(now.getFullYear(), 0, 1);
 
       const startDateISO = startDate.toISOString();
-      console.log("Fetching data since:", startDateISO);
 
-      // Parallel Fetch
       const [ordersRes, eventsRes] = await Promise.all([
         supabase
           .from("orders")
-          .select("id, total_amount, created_at, status")
+          .select("id, total_amount, created_at")
           .eq("website_id", website.id)
           .gte("created_at", startDateISO)
           .neq("status", "canceled"),
 
         supabase
           .from("client_analytics")
-          .select("id, event_type, timestamp, location, path")
+          .select("event_type, timestamp, location, path")
           .eq("website_id", website.id)
           .gte("timestamp", startDateISO)
       ]);
 
-      if (ordersRes.error) console.error("Error fetching orders:", ordersRes.error);
-      if (eventsRes.error) console.error("Error fetching events:", eventsRes.error);
-
       const orders = ordersRes.data || [];
       const events = eventsRes.data || [];
-
-      console.log(`Fetched ${orders.length} orders and ${events.length} events.`);
 
       // Fetch Order Items
       let orderItems = [];
       const orderIds = orders.map(o => o.id);
       if (orderIds.length > 0) {
-        const { data: items, error: itemsError } = await supabase
+        const { data: items } = await supabase
           .from("order_items")
-          .select("quantity, price, products(name)")
+          .select("quantity, products(name)")
           .in("order_id", orderIds);
-
-        if (itemsError) console.error("Error fetching items:", itemsError);
         orderItems = items || [];
       }
 
-      // Calculations
+      // --- Calculations ---
+
+      // 1. Totals
       const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
       const totalOrders = orders.length;
+      const avgOrderValue = totalOrders > 0 ? (totalRevenue / totalOrders) : 0;
 
+      // 2. Unique Visitors (Overall)
       const uniqueVisitors = new Set();
       events.forEach(e => {
-        if (e.location && e.location.visitor_id) {
-          uniqueVisitors.add(e.location.visitor_id);
-        } else if (e.location && e.location.ip) {
-          uniqueVisitors.add(e.location.ip);
-        }
+        const vid = e.location?.visitor_id || e.location?.ip;
+        if (vid) uniqueVisitors.add(vid);
       });
-      // Fallback logic
       const totalVisitors = uniqueVisitors.size || (events.length > 0 ? Math.ceil(events.length / 2) : 0);
-
       const conversionRate = totalVisitors > 0 ? ((totalOrders / totalVisitors) * 100).toFixed(1) : "0.0";
 
-      // Grouping
+      // 3. Funnel Logic
+      // We need unique visitors for specific paths.
+      // Normalize paths: remove /site/slug prefix if present
+      const cleanPath = (p) => {
+          if (!p) return '/';
+          let cleaned = p;
+          if (website.site_slug) {
+             cleaned = cleaned.replace(`/site/${website.site_slug}`, '');
+             cleaned = cleaned.replace(`/templates/${website.template_id}`, ''); // Just in case
+          }
+          if (cleaned === '') return '/';
+          return cleaned;
+      };
+
+      const funnelSets = {
+          home: new Set(),
+          shop: new Set(),
+          checkout: new Set(),
+          purchase: new Set() // Actually purchase count is orders, but unique buyers? Let's use orders count for purchase step simplicity or unique order emails if available.
+          // For simplicity, Purchase count = totalOrders.
+      };
+
+      events.forEach(e => {
+          const vid = e.location?.visitor_id || e.location?.ip || 'anon';
+          const path = cleanPath(e.path);
+
+          if (path === '/' || path === '') funnelSets.home.add(vid);
+          if (path.includes('shop') || path.includes('product')) funnelSets.shop.add(vid); // Assuming product page counts as shopping intent
+          if (path.includes('checkout')) funnelSets.checkout.add(vid);
+      });
+
+      const funnelData = [
+          { name: 'Home View', value: funnelSets.home.size, fill: '#8A63D2' },
+          { name: 'Product/Shop', value: funnelSets.shop.size, fill: '#A0C4FF' },
+          { name: 'Checkout', value: funnelSets.checkout.size, fill: '#FFB74D' },
+          { name: 'Purchase', value: totalOrders, fill: '#4CAF50' }
+      ];
+
+      // 4. Grouping for Charts
       const groupByDate = (items, dateKey, valueKey = null, count = false) => {
         const map = {};
         const d = new Date(startDate);
-        // Ensure we cover up to today
         const end = new Date();
-
         while (d <= end) {
             const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             map[key] = 0;
             d.setDate(d.getDate() + 1);
         }
-
         items.forEach(item => {
             const itemDate = new Date(item[dateKey]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            // Only add if key exists (within range) - safe check
             if (map[itemDate] !== undefined) {
                 if (count) map[itemDate] += 1;
                 else map[itemDate] += (Number(item[valueKey]) || 0);
@@ -189,7 +208,7 @@ export default function AnalyticsPage() {
       const revenueData = groupByDate(orders, 'created_at', 'total_amount');
       const visitorsData = groupByDate(events, 'timestamp', null, true);
 
-      // Top Products
+      // 5. Top Products
       const productMap = {};
       orderItems.forEach(item => {
         const name = item.products?.name || "Unknown Product";
@@ -200,10 +219,10 @@ export default function AnalyticsPage() {
         .sort((a, b) => b.sales - a.sales)
         .slice(0, 5);
 
-      // Top Pages
+      // 6. Top Pages (Cleaned)
       const pageMap = {};
       events.forEach(e => {
-         const path = e.path || '/';
+         const path = cleanPath(e.path);
          pageMap[path] = (pageMap[path] || 0) + 1;
       });
       const topPages = Object.entries(pageMap)
@@ -216,14 +235,16 @@ export default function AnalyticsPage() {
         totalOrders,
         totalVisitors,
         conversionRate,
+        avgOrderValue,
         revenueData,
         visitorsData,
         topProducts,
-        topPages
+        topPages,
+        funnelData
       });
 
     } catch (err) {
-      console.error("Critical Analytics Error:", err);
+      console.error("Analytics Error:", err);
       setError("An unexpected error occurred.");
     } finally {
       setLoading(false);
@@ -246,7 +267,6 @@ export default function AnalyticsPage() {
           <p className="text-gray-500 mt-1">Monitor your store's performance and visitor stats.</p>
         </div>
 
-        {/* Date Filter Dropdown */}
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -256,16 +276,12 @@ export default function AnalyticsPage() {
                {rangeLabels[dateRange]}
                <ChevronDown className="h-4 w-4 text-gray-500" />
             </button>
-
             {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-10 overflow-hidden">
                     {Object.keys(rangeLabels).map((key) => (
                         <button
                             key={key}
-                            onClick={() => {
-                                setDateRange(key);
-                                setIsDropdownOpen(false);
-                            }}
+                            onClick={() => { setDateRange(key); setIsDropdownOpen(false); }}
                             className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
                                 dateRange === key ? 'text-[#8A63D2] font-medium bg-purple-50' : 'text-gray-700'
                             }`}
@@ -295,17 +311,32 @@ export default function AnalyticsPage() {
              orders={data.totalOrders}
              visitors={data.totalVisitors}
              conversion={data.conversionRate}
+             aov={data.avgOrderValue}
            />
 
+           {/* Charts Grid */}
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <RevenueChart data={data.revenueData} />
               <VisitorsChart data={data.visitorsData} />
            </div>
 
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <TopProducts products={data.topProducts} />
-              <TopPages pages={data.topPages} />
+           {/* Funnel & Lists Grid */}
+           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+               <div className="lg:col-span-3">
+                    <FunnelChart data={data.funnelData} />
+               </div>
+               <div className="lg:col-span-1.5">
+                    <TopProducts products={data.topProducts} />
+               </div>
+               <div className="lg:col-span-1.5">
+                    <TopPages pages={data.topPages} />
+               </div>
            </div>
+           {/* Adjusted layout: Funnel full width, lists below? Or Funnel side?
+               Let's make funnel full width or 2/3.
+               Actually user asked for "more analytics".
+               Let's put Funnel on its own row.
+           */}
         </>
       )}
     </div>
