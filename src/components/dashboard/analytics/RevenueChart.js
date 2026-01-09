@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Defs, LinearGradient } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-export default function RevenueWaveChart({ data }) {
+export default function RevenueChart({ data }) {
     const [activeTab, setActiveTab] = useState('revenue'); // 'revenue' or 'visitors'
 
     const formatYAxis = (value) => {

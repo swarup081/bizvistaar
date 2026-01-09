@@ -5,13 +5,20 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 // Service role client for privileged database access (bypassing RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabaseAdmin = (supabaseUrl && serviceRoleKey)
+  ? createClient(supabaseUrl, serviceRoleKey)
+  : null;
 
 // --- HELPER: Get Current Website ID ---
 async function getWebsiteId() {
+  if (!supabaseAdmin) {
+      console.error("Supabase Admin Client not initialized. Missing env vars.");
+      return { error: "Server misconfiguration: Missing Supabase keys." };
+  }
+
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
@@ -34,7 +41,7 @@ async function getWebsiteId() {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return null;
+    return { error: "User not authenticated." };
   }
 
   // Fetch website ID for this user
@@ -45,27 +52,31 @@ async function getWebsiteId() {
     .single();
 
   if (websiteError) {
-     // Fallback: Try to find *any* website for this user if .single() failed due to multiple rows (though logic prevents this usually)
-     const { data: firstWebsite } = await supabaseAdmin
+     // Fallback: Try to find *any* website for this user
+     const { data: firstWebsite, error: fallbackError } = await supabaseAdmin
         .from('websites')
         .select('id')
         .eq('user_id', user.id)
         .limit(1)
         .maybeSingle();
 
-     if (firstWebsite) return firstWebsite.id;
-     return null;
+     if (firstWebsite) return { id: firstWebsite.id };
+
+     // Log the actual error for debugging
+     console.error("Website fetch error:", websiteError, fallbackError);
+     return { error: "No website found for this user." };
   }
 
-  return website?.id;
+  return { id: website?.id };
 }
 
 export async function getDashboardData(timeRange = 'week') {
   try {
-    const websiteId = await getWebsiteId();
-    if (!websiteId) {
-      return { error: 'Website not found' };
+    const result = await getWebsiteId();
+    if (result.error) {
+      return { error: result.error };
     }
+    const websiteId = result.id;
 
     // Determine Date Range
     const now = new Date();
@@ -94,16 +105,16 @@ export async function getDashboardData(timeRange = 'week') {
       .neq('status', 'canceled') // Exclude canceled orders
       .order('created_at', { ascending: true });
 
-    if (ordersError) throw ordersError;
+    if (ordersError) throw new Error("Orders fetch failed: " + ordersError.message);
 
     // 2. Fetch Visitors (Client Analytics)
     const { data: visitors, error: visitorsError } = await supabaseAdmin
       .from('client_analytics')
-      .select('created_at:timestamp') // Alias timestamp to created_at for consistency if needed, but schema says 'timestamp'
+      .select('created_at:timestamp')
       .eq('website_id', websiteId)
       .gte('timestamp', startIso);
 
-    if (visitorsError) throw visitorsError;
+    if (visitorsError) throw new Error("Analytics fetch failed: " + visitorsError.message);
 
     // --- AGGREGATION ---
 
@@ -115,7 +126,7 @@ export async function getDashboardData(timeRange = 'week') {
     // Wave Chart Data (Group by Day)
     const chartDataMap = new Map();
 
-    // Initialize map with empty dates to ensure continuous line
+    // Initialize map
     let currentDate = new Date(startDate);
     const endDate = new Date();
     while (currentDate <= endDate) {
@@ -142,10 +153,9 @@ export async function getDashboardData(timeRange = 'week') {
         }
     });
 
-    // Convert Map to Array & Sort
     const chartData = Array.from(chartDataMap.values()).sort((a, b) => new Date(a.name) - new Date(b.name));
 
-    // Format Dates for display (e.g., "Mon", "Feb 20")
+    // Format Dates
     const formattedChartData = chartData.map(d => {
         const date = new Date(d.name);
         return {
@@ -155,16 +165,14 @@ export async function getDashboardData(timeRange = 'week') {
                 : date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })
         };
     });
-    // For year view, we might want to aggregate by month instead of day to avoid too many points?
-    // User requested "Wave Graph", detailed is okay. But for Year, 365 points is too many.
-    // Let's optimize: If Year, aggregate by Month.
 
+    // Optimize Year View
     let finalChartData = formattedChartData;
     if (timeRange === 'year') {
          const monthlyMap = new Map();
          chartData.forEach(d => {
-             const date = new Date(d.name); // d.name is 'YYYY-MM-DD'
-             const monthKey = date.toLocaleString('en-US', { month: 'short', year: 'numeric' }); // "Jan 2024"
+             const date = new Date(d.name);
+             const monthKey = date.toLocaleString('en-US', { month: 'short', year: 'numeric' });
 
              if (!monthlyMap.has(monthKey)) {
                  monthlyMap.set(monthKey, { name: monthKey, visitors: 0, revenue: 0, sortDate: date });
@@ -178,13 +186,10 @@ export async function getDashboardData(timeRange = 'week') {
             .map(({ sortDate, ...rest }) => rest);
     }
 
-
     // Sales by State
     const stateMap = {};
     orders.forEach(o => {
-        // shipping_address is JSONB
         const addr = o.customers?.shipping_address || {};
-        // Normalize state name (trim, lowercase?)
         const rawState = addr.state || 'Unknown';
         const state = rawState.trim();
 
@@ -194,8 +199,8 @@ export async function getDashboardData(timeRange = 'week') {
 
     const salesByState = Object.entries(stateMap)
         .map(([state, amount]) => ({ state, sales: amount }))
-        .sort((a, b) => b.sales - a.sales) // Descending
-        .slice(0, 10); // Top 10
+        .sort((a, b) => b.sales - a.sales)
+        .slice(0, 10);
 
     // Top Products
     const productMap = new Map();
@@ -207,10 +212,10 @@ export async function getDashboardData(timeRange = 'week') {
                     productMap.set(pid, {
                         id: pid,
                         name: item.products?.name || 'Unknown Product',
-                        price: item.price, // Unit price at time of sale
+                        price: item.price,
                         sales: 0,
                         revenue: 0,
-                        stock: item.products?.stock // Current stock
+                        stock: item.products?.stock
                     });
                 }
                 const entry = productMap.get(pid);

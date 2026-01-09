@@ -1,9 +1,9 @@
-import AnalyticsDashboard from '@/components/dashboard/analytics/AnalyticsDashboard';
+import AnalyticsOverview from '@/components/dashboard/analytics/AnalyticsOverview';
 
 export default function AnalyticsPage() {
   return (
     <div className="p-6">
-      <AnalyticsDashboard />
+      <AnalyticsOverview />
     </div>
   );
 }

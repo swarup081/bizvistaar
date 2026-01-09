@@ -2,13 +2,59 @@
 
 import { useState, useEffect } from 'react';
 import { getDashboardData } from '@/app/actions/analyticsActions';
-import OverviewCards from './OverviewCards';
-import RevenueWaveChart from './RevenueWaveChart';
+import RevenueChart from './RevenueChart';
 import StateSalesChart from './StateSalesChart';
 import TopProductsTable from './TopProductsTable';
-import { Loader2 } from 'lucide-react';
+import { Loader2, DollarSign, ShoppingBag, Users, TrendingUp } from 'lucide-react';
 
-export default function AnalyticsDashboard() {
+function OverviewCards({ metrics, topProduct }) {
+    const cards = [
+        {
+            title: 'Total Revenue',
+            value: `₹${metrics.totalRevenue.toLocaleString()}`,
+            icon: DollarSign,
+        },
+        {
+            title: 'Total Orders',
+            value: metrics.totalOrders,
+            icon: ShoppingBag,
+        },
+        {
+            title: 'Total Visitors',
+            value: metrics.totalVisitors,
+            icon: Users,
+        },
+        {
+            title: 'Top Product',
+            value: topProduct ? `₹${topProduct.revenue.toLocaleString()}` : '—',
+            subValue: topProduct ? topProduct.name : 'No sales yet',
+            icon: TrendingUp,
+        }
+    ];
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {cards.map((card, index) => (
+                <div key={index} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between h-32">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-sm font-medium text-gray-500">{card.title}</p>
+                            <h3 className="text-2xl font-bold text-gray-900 mt-1">{card.value}</h3>
+                             {card.subValue && (
+                                <p className="text-xs text-gray-500 truncate max-w-[150px]" title={card.subValue}>{card.subValue}</p>
+                            )}
+                        </div>
+                        <div className="p-2 bg-gray-50 rounded-lg">
+                            <card.icon className="w-5 h-5 text-black" />
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+export default function AnalyticsOverview() {
     const [timeRange, setTimeRange] = useState('week'); // week, month, year
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -76,14 +122,14 @@ export default function AnalyticsDashboard() {
                 </div>
             ) : (
                 <>
-                    {/* Overview Cards */}
+                    {/* Overview Cards (Merged) */}
                     <OverviewCards metrics={data.metrics} topProduct={data.topProducts[0]} />
 
                     {/* Main Chart Area */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                             <h3 className="text-lg font-semibold text-gray-900 mb-6">Performance Trend</h3>
-                            <RevenueWaveChart data={data.chartData} />
+                            <RevenueChart data={data.chartData} />
                         </div>
 
                         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
