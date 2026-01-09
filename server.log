@@ -11,3 +11,4 @@
  ✓ Ready in 2.8s
  ○ Compiling /dashboard/analytics ...
  GET /dashboard/analytics 200 in 14.5s (compile: 13.9s, render: 676ms)
+ ✓ Compiled in 8.3s
