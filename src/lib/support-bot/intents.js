@@ -114,7 +114,7 @@ const intents = [
 // Fuse.js Options
 const options = {
   includeScore: true,
-  threshold: 0.4, // Lower threshold = stricter matching. 0.4 is a good balance.
+  threshold: 0.5, // Increased slightly to be more forgiving for partial matches
   keys: ['keywords']
 };
 

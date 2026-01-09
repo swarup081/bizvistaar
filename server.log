@@ -62,3 +62,28 @@ The width(-1) and height(-1) of chart should be greater than 0,
   page: '/api/support'
 }
  POST /api/support 500 in 111ms (compile: 95ms, render: 16ms)
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /dashboard 200 in 2.7s (compile: 1008ms, render: 1694ms)
+ ⨯ Error: Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+    at module evaluation (src/app/api/support/route.js:4:16)
+    at Object.<anonymous> (.next/dev/server/app/api/support/route.js:6:3)
+  2 | import { NextResponse } from 'next/server';
+  3 |
+> 4 | const openai = new OpenAI({
+    |                ^
+  5 |   apiKey: process.env.OPENAI_API_KEY,
+  6 | });
+  7 | {
+  page: '/api/support'
+}
+ POST /api/support 500 in 155ms (compile: 131ms, render: 24ms)
+ ✓ Compiled in 8.1s
+The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width.
+ GET /dashboard 200 in 2.6s (compile: 1631ms, render: 1012ms)
+ POST /dashboard 200 in 49ms (compile: 8ms, render: 41ms)

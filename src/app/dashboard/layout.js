@@ -104,7 +104,7 @@ export default function DashboardLayout({ children }) {
       </main>
 
       {/* Support Widget */}
-      <SupportWidget contactNumber={process.env.CONTACT_FOUNDER} />
+      <SupportWidget />
     </div>
   );
 }

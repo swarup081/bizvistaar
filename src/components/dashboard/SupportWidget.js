@@ -5,19 +5,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, User, Bot, AlertTriangle, ExternalLink } from 'lucide-react';
 import { findLayer1Match } from '@/lib/support-bot/intents';
 import { useRouter } from 'next/navigation';
+import { getSupportConfig } from '@/app/actions/supportActions';
 
-export default function SupportWidget({ contactNumber }) {
+export default function SupportWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hi! I am the BizVistar Assistant. How can I help you today?' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [contactFounderNumber, setContactFounderNumber] = useState("919876543210");
   const messagesEndRef = useRef(null);
   const router = useRouter();
 
-  // Fallback if prop is missing, though layout should provide it.
-  const CONTACT_FOUNDER_NUMBER = contactNumber || "919876543210";
+  useEffect(() => {
+      // Fetch server-side config securely
+      getSupportConfig().then(config => {
+          if (config.contactFounder) {
+              setContactFounderNumber(config.contactFounder);
+          }
+      });
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -107,7 +115,7 @@ export default function SupportWidget({ contactNumber }) {
                     I see this is an urgent issue. Please chat directly with the Founder.
                 </p>
                 <a
-                    href={`https://wa.me/${CONTACT_FOUNDER_NUMBER}?text=I%20need%20urgent%20help%20with%20my%20BizVistar%20account`}
+                    href={`https://wa.me/${contactFounderNumber}?text=I%20need%20urgent%20help%20with%20my%20BizVistar%20account`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-2 rounded-md text-sm font-medium transition-colors"
@@ -144,7 +152,7 @@ export default function SupportWidget({ contactNumber }) {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 p-4 bg-gradient-to-r from-[#8A63D2] to-[#6C4AB6] text-white rounded-full shadow-lg hover:shadow-xl transition-shadow"
+        className="fixed bottom-6 right-6 z-[9999] p-4 bg-gradient-to-r from-[#8A63D2] to-[#6C4AB6] text-white rounded-full shadow-lg hover:shadow-xl transition-shadow"
       >
         {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
       </motion.button>
@@ -157,7 +165,7 @@ export default function SupportWidget({ contactNumber }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-24 right-6 z-50 w-[350px] md:w-[380px] h-[500px] bg-white/90 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-24 right-4 md:right-6 z-[9999] w-[calc(100vw-2rem)] md:w-[380px] h-[500px] max-h-[80vh] bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="p-4 bg-gradient-to-r from-[#8A63D2] to-[#6C4AB6] text-white flex items-center justify-between">
