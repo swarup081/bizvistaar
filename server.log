@@ -1,0 +1,19 @@
+
+> bizvistar@0.1.0 dev
+> next dev
+
+   ▲ Next.js 16.0.10 (Turbopack)
+   - Local:         http://localhost:3000
+   - Network:       http://192.168.0.2:3000
+
+ ✓ Starting...
+ ✓ Ready in 744ms
+ ○ Compiling /_not-found/page ...
+ GET /login 404 in 5.3s (compile: 4.9s, render: 365ms)
+ POST /login 404 in 36ms (compile: 13ms, render: 22ms)
+ GET /sign-in 200 in 1560ms (compile: 1384ms, render: 176ms)
+ POST /sign-in 200 in 15ms (compile: 6ms, render: 9ms)
+ GET /sign-in 200 in 103ms (compile: 6ms, render: 97ms)
+ POST /sign-in 200 in 15ms (compile: 6ms, render: 9ms)
+ GET /sign-in 200 in 86ms (compile: 7ms, render: 80ms)
+ POST /sign-in 200 in 17ms (compile: 9ms, render: 9ms)
