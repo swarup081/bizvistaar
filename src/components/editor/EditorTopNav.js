@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
   Monitor, Smartphone, ChevronDown, Info, Check, RotateCcw // Import icons
 } from 'lucide-react';
-import Logo from '@/lib/logo/Logo';
+import Logo from '@/lib/logo/logoOfBizVistar';
 
 // A simple reusable button component for the nav
 const NavButton = ({ children, className = '', ...props }) => (

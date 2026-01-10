@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { GridBackgroundDemo } from "@/components/GridBackgroundDemo"; // Reusing the grid background
-import Logo from '@/lib/logo/Logo';
+import Logo from '@/lib/logo/logoOfBizVistar';
 
 export default function AuthLayout({ children }) {
   return (

@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { GridBackgroundDemo } from "@/components/GridBackgroundDemo";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, MapPin, Calendar, ShoppingBag, Tags, Menu } from 'lucide-react'; // Menu added for versatility
-import Logo from '@/lib/logo/Logo';
+import Logo from '@/lib/logo/logoOfBizVistar';
 
 // --- Shared Styles & Logic (Consistent with Step 2) ---
 const stylesMap = {

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Check } from 'lucide-react';
-import Logo from '@/lib/logo/Logo';
+import Logo from '@/lib/logo/logoOfBizVistar';
 
 // Reusable Checkmark Icon
 const CheckIcon = () => (

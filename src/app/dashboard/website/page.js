@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import EditorLayout from '@/components/editor/EditorLayout';
 import Link from 'next/link';
 
-export default function WebsiteDashboardPage() {
+function WebsiteDashboardContent() {
   const [loading, setLoading] = useState(true);
   const [website, setWebsite] = useState(null);
   const [error, setError] = useState(null);
@@ -79,7 +79,7 @@ export default function WebsiteDashboardPage() {
     }
 
     fetchUserWebsite();
-  }, []);
+  }, [slugParam]); // Added slugParam dependency
 
   if (loading) {
     return (
@@ -108,5 +108,17 @@ export default function WebsiteDashboardPage() {
         initialData={website.data}
         siteSlug={website.slug}
     />
+  );
+}
+
+export default function WebsiteDashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    }>
+      <WebsiteDashboardContent />
+    </Suspense>
   );
 }

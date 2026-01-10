@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Logo from '@/lib/logo/Logo';
+import Logo from '@/lib/logo/logoOfBizVistar';
 
 export default function DashboardLayout({ children }) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -26,7 +26,7 @@ export default function DashboardLayout({ children }) {
     { name: 'Website', icon: Globe, href: '/dashboard/website' },
     { name: 'Orders', icon: Package, href: '/dashboard/orders' },
     { name: 'Products', icon: Tag, href: '/dashboard/products' },
-    { name: 'Apps', icon: AppWindow, href: '/dashboard/apps' },
+    //{ name: 'Apps', icon: AppWindow, href: '/dashboard/apps' },
     { name: 'Analytics', icon: PieChart, href: '/dashboard/analytics' },
   ];
 
