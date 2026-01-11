@@ -39,6 +39,7 @@ function CheckoutContent() {
   });
 
   const [addCompanyDetails, setAddCompanyDetails] = useState(false);
+  const [showPromo, setShowPromo] = useState(false);
   const [promoCode, setPromoCode] = useState('');
 
   const handleChange = (e) => {
@@ -48,14 +49,10 @@ function CheckoutContent() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would integrate with your payment gateway (Razorpay/Stripe)
-    // and create the subscription in Supabase.
     console.log('Form submitted:', formData);
-    // Redirect or Show Payment Modal
   };
 
   // --- Dates for Legal Text ---
-  // Calculate next renewal date based on billing cycle
   const today = new Date();
   const renewalDate = new Date(today);
   if (billingCycle === 'yearly') {
@@ -65,20 +62,46 @@ function CheckoutContent() {
   }
   const formattedRenewalDate = renewalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-  // Calculate renewal amount (assuming same price for now)
-  // Logic for currency formatting
-  const formattedPrice = parseFloat(price).toLocaleString('en-IN', {
+  // Format Price
+  const numericPrice = parseFloat(price);
+  const formattedPrice = numericPrice.toLocaleString('en-IN', {
       style: 'currency',
       currency: 'INR',
       minimumFractionDigits: 2
   });
 
-   // Upper limit for e-mandate (Example logic)
+  // Fake Original Price for Strikethrough (e.g., 25% markup if not provided)
+  const fakeOriginalPrice = (numericPrice * 1.25).toLocaleString('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2
+  });
+
+   // Upper limit for e-mandate
    const eMandateLimit = 15000;
    const formattedLimit = eMandateLimit.toLocaleString('en-IN', {
        style: 'currency',
        currency: 'INR',
        minimumFractionDigits: 0
+   });
+
+   // Free Items List
+   const freeItems = [
+     { name: 'Priority Support', original: '2,400.00' },
+     { name: 'Custom Domain Connection', original: '999.00' },
+     { name: 'Cloud Server Hosting', original: '499.00' },
+     { name: 'SSL Security (https)', original: '199.00' },
+     { name: 'One-Time Setup Fee', original: '999.00' },
+   ];
+
+   const planLabel = billingCycle === 'yearly' ? '12-month plan' : 'Monthly plan';
+
+   // Calculate Total Struck Price (Plan Original + Free Items Original)
+   // Just for visual effect, rough calculation
+   const totalStruck = (numericPrice * 1.25 + 2400 + 999 + 499 + 199 + 999).toLocaleString('en-IN', {
+       style: 'currency',
+       currency: 'INR',
+       minimumFractionDigits: 2
    });
 
 
@@ -293,55 +316,99 @@ function CheckoutContent() {
         {/* --- RIGHT COLUMN: ORDER SUMMARY --- */}
         <div className="lg:col-span-1">
              <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm sticky top-24">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">Order summary</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Order summary</h3>
+                <h4 className="text-lg font-bold text-gray-700 mb-6">{planName}</h4>
 
                 <div className="space-y-4 mb-6">
+                    {/* Main Plan Row */}
                     <div className="flex justify-between items-baseline">
-                         <span className="text-base text-gray-700">{planName} Plan ({billingCycle})</span>
-                         <span className="text-base font-bold text-gray-900">{formattedPrice}</span>
+                         <span className="text-base text-gray-700">{planLabel}</span>
+                         <div className="text-right">
+                            <span className="text-sm text-gray-400 line-through mr-2">{fakeOriginalPrice}</span>
+                            <span className="text-base font-bold text-gray-900">{formattedPrice}</span>
+                         </div>
                     </div>
-                    {/* No Taxes Row as requested */}
+
+                    {/* 12 Months Hosting (Requested Item) */}
+                    <div className="flex justify-between items-baseline">
+                         <span className="text-base text-gray-700">12 Months Hosting</span>
+                         <div className="text-right">
+                            <span className="text-sm text-gray-400 line-through mr-2">₹5,988.00</span>
+                            <span className="text-base font-bold text-gray-900">₹0.00</span>
+                         </div>
+                    </div>
+
+                    {/* Free Items Loop */}
+                    {freeItems.map((item, i) => (
+                        <div key={i} className="flex justify-between items-baseline">
+                            <span className="text-base text-gray-700">{item.name}</span>
+                            <div className="text-right">
+                                <span className="text-sm text-gray-400 line-through mr-2">₹{item.original}</span>
+                                <span className="text-base font-bold text-gray-900">₹0.00</span>
+                            </div>
+                        </div>
+                    ))}
                 </div>
 
                 <div className="border-t border-gray-200 pt-4 mb-6">
-                    <div className="flex justify-between items-center">
-                        <span className="text-xl font-bold text-gray-900">Subtotal</span>
-                        <span className="text-xl font-bold text-gray-900">{formattedPrice}</span>
+                     <div className="flex justify-between items-center mb-2">
+                        <span className="text-xl font-bold text-gray-900">Total</span>
+                        <div className="text-right">
+                            <span className="block text-sm text-gray-400 line-through">{totalStruck}</span>
+                            <span className="text-3xl font-bold text-gray-900">{formattedPrice}</span>
+                         </div>
                     </div>
                 </div>
 
                 <div className="space-y-4">
-                    <p className="text-purple-600 font-semibold cursor-pointer hover:underline">Have a coupon code?</p>
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:border-purple-500"
-                            placeholder="Code"
-                            value={promoCode}
-                            onChange={(e) => setPromoCode(e.target.value)}
-                        />
-                        <button className="px-4 py-2 border border-purple-600 text-purple-600 font-semibold rounded-md hover:bg-purple-50">
-                            Apply
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setShowPromo(!showPromo)}
+                        className="text-purple-600 font-semibold hover:underline focus:outline-none"
+                    >
+                        Have a coupon code?
+                    </button>
+
+                    <AnimatePresence>
+                        {showPromo && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="overflow-hidden"
+                            >
+                                <div className="flex gap-2 pt-2">
+                                    <input
+                                        type="text"
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:border-purple-500"
+                                        placeholder="Code"
+                                        value={promoCode}
+                                        onChange={(e) => setPromoCode(e.target.value)}
+                                    />
+                                    <button className="px-4 py-2 border border-purple-600 text-purple-600 font-semibold rounded-md hover:bg-purple-50">
+                                        Apply
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
              </div>
+
+             {/* --- LEGAL TEXT MOVED HERE --- */}
+             <div className="mt-6 text-xs text-gray-500 leading-relaxed space-y-4">
+                <p>
+                    By purchasing, you accept the <Link href="/terms" className="underline text-gray-600">Terms and Conditions</Link> and <Link href="/privacy" className="underline text-gray-600">Privacy Policy</Link> and acknowledge reading the Privacy Policy.
+                </p>
+                <p>
+                    You also agree to the automatic renewal of your subscription on a {billingCycle} basis for {formattedPrice} starting on {formattedRenewalDate}, which can be disabled at any time through your account. Any eligible tax exemptions and discounts will be applied when you&apos;re charged for your next renewal payment.
+                </p>
+                <p>
+                    In accordance with RBI guidelines, your card details will be saved securely for future purchases and subscription renewals. An e-mandate will be created for a maximum amount of {formattedLimit}, but you&apos;ll only be charged the amount of your purchase.
+                </p>
+            </div>
         </div>
 
-      </div>
-
-      {/* --- LEGAL TEXT (Footer of the form) --- */}
-      <div className="mt-12 max-w-4xl text-xs text-gray-500 leading-relaxed space-y-4">
-        <p>
-            By purchasing, you accept the <Link href="/terms" className="underline text-gray-600">Terms and Conditions</Link> and <Link href="/privacy" className="underline text-gray-600">Privacy Policy</Link> and acknowledge reading the Privacy Policy.
-        </p>
-        <p>
-            You also agree to the automatic renewal of your subscription on a {billingCycle} basis for {formattedPrice} starting on {formattedRenewalDate}, which can be disabled at any time through your account. Any eligible tax exemptions and discounts will be applied when you&apos;re charged for your next renewal payment.
-        </p>
-        <p>
-            In accordance with RBI guidelines, your card details will be saved securely for future purchases and subscription renewals. An e-mandate will be created for a maximum amount of {formattedLimit}, but you&apos;ll only be charged the amount of your purchase.
-        </p>
       </div>
 
       {/* --- FAQ SECTION --- */}
