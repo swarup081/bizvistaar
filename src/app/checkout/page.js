@@ -1,33 +1,135 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { HelpCircle, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FaqSection from '@/components/checkout/FaqSection';
 import { AnimatePresence, motion } from 'framer-motion';
-// import { createClient } from '@/lib/supabaseClient';
+import { createBrowserClient } from '@supabase/ssr';
+
+// --- CONFIGURATION ---
+
+const PLAN_DETAILS = {
+  'Starter': { monthly: 299 },
+  'Pro': { monthly: 799 },
+  'Growth': { monthly: 1499 }, // Sometimes called 'Business' in memory, but 'Growth' in page.
+};
+
+// Map items to their struck prices.
+// If isFixed is true, use same price for both.
+// Else, use yearly/monthly distinct values.
+const FREE_ITEMS_CONFIG = [
+  {
+    id: 'hosting',
+    name: 'Hosting', // Will be prefixed dynamically
+    yearlyStruck: 5988,
+    monthlyStruck: 499,
+    dynamicLabel: true
+  },
+  {
+    id: 'support',
+    name: 'Priority Support',
+    yearlyStruck: 2400,
+    monthlyStruck: 200
+  },
+  {
+    id: 'domain',
+    name: 'Custom Domain Connection',
+    yearlyStruck: 999,
+    monthlyStruck: 99
+  },
+  {
+    id: 'cloud',
+    name: 'Cloud Server Hosting',
+    yearlyStruck: 499,
+    monthlyStruck: 49
+  },
+  {
+    id: 'ssl',
+    name: 'SSL Security (https)',
+    yearlyStruck: 199,
+    monthlyStruck: 199,
+    isFixed: true
+  },
+  {
+    id: 'setup',
+    name: 'One-Time Setup Fee',
+    yearlyStruck: 999,
+    monthlyStruck: 999,
+    isFixed: true
+  },
+];
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const planName = searchParams.get('plan') || 'Pro';
-  const billingCycle = searchParams.get('billing') || 'monthly';
-  const price = searchParams.get('price') || '0.00';
+  const billingCycle = searchParams.get('billing') || 'monthly'; // 'monthly' | 'yearly'
+  const paramPrice = parseFloat(searchParams.get('price') || '0');
 
-  // --- Auth Check (Optional but good for UX) ---
-  // You might want to do a server-side check or a client-side effect to redirect if not logged in
-  // For now, assuming middleware or previous flow handled it, but let's add a quick check.
-  // actually the prompt says "if user click a plan and is not sign in he need to do it first".
-  // This logic is best handled in the Plan selection page or middleware.
-  // I will assume the user is here because they are signed in or redirected back.
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+
+  // --- Auth Check ---
+  useEffect(() => {
+    const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+
+    const checkUser = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            // Construct redirect URL preserving current params
+            const currentParams = new URLSearchParams({
+                plan: planName,
+                billing: billingCycle,
+                price: searchParams.get('price') || '0'
+            }).toString();
+
+            router.push(`/sign-in?redirect=/checkout?${encodeURIComponent(currentParams)}`);
+        } else {
+            setIsLoadingAuth(false);
+        }
+    };
+
+    checkUser();
+  }, [planName, billingCycle, router, searchParams]);
+
+  const isYearly = billingCycle === 'yearly';
+
+  // --- Calculate Actual Price ---
+  // If yearly, paramPrice is monthly rate (e.g. 666). Total = 666 * 12.
+  // If monthly, paramPrice is total (e.g. 799).
+  const finalPrice = isYearly ? paramPrice * 12 : paramPrice;
+
+  // --- Calculate Plan Original Price (Struck) ---
+  const planBase = PLAN_DETAILS[planName] || { monthly: 0 };
+  let planStruckPrice = null;
+
+  if (isYearly) {
+    // Yearly Struck = Monthly Rate * 12
+    planStruckPrice = planBase.monthly * 12;
+  } else {
+    // Monthly: User said "no cut anything other", so NO struck price for the plan itself.
+    planStruckPrice = null;
+  }
+
+  // --- Format Currency Helper ---
+  const formatCurrency = (amount) => {
+    return amount.toLocaleString('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2
+    });
+  };
 
   // --- Form State ---
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    country: 'India', // Fixed
+    country: 'India',
     phoneCode: '+91',
     phoneNumber: '',
     address: '',
@@ -55,27 +157,15 @@ function CheckoutContent() {
   // --- Dates for Legal Text ---
   const today = new Date();
   const renewalDate = new Date(today);
-  if (billingCycle === 'yearly') {
+  if (isYearly) {
     renewalDate.setFullYear(renewalDate.getFullYear() + 1);
   } else {
     renewalDate.setMonth(renewalDate.getMonth() + 1);
   }
   const formattedRenewalDate = renewalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-  // Format Price
-  const numericPrice = parseFloat(price);
-  const formattedPrice = numericPrice.toLocaleString('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 2
-  });
-
-  // Fake Original Price for Strikethrough (e.g., 25% markup if not provided)
-  const fakeOriginalPrice = (numericPrice * 1.25).toLocaleString('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 2
-  });
+  const formattedPrice = formatCurrency(finalPrice);
+  const formattedPlanStruck = planStruckPrice ? formatCurrency(planStruckPrice) : null;
 
    // Upper limit for e-mandate
    const eMandateLimit = 15000;
@@ -85,25 +175,26 @@ function CheckoutContent() {
        minimumFractionDigits: 0
    });
 
-   // Free Items List
-   const freeItems = [
-     { name: 'Priority Support', original: '2,400.00' },
-     { name: 'Custom Domain Connection', original: '999.00' },
-     { name: 'Cloud Server Hosting', original: '499.00' },
-     { name: 'SSL Security (https)', original: '199.00' },
-     { name: 'One-Time Setup Fee', original: '999.00' },
-   ];
+   const planLabel = isYearly ? '12-month plan' : 'Monthly plan';
 
-   const planLabel = billingCycle === 'yearly' ? '12-month plan' : 'Monthly plan';
+   // --- Calculate Total Struck Price for Summary ---
+   // Start with Plan Struck (if any, else Plan Actual)
+   let totalStruckVal = planStruckPrice || finalPrice;
 
-   // Calculate Total Struck Price (Plan Original + Free Items Original)
-   // Just for visual effect, rough calculation
-   const totalStruck = (numericPrice * 1.25 + 2400 + 999 + 499 + 199 + 999).toLocaleString('en-IN', {
-       style: 'currency',
-       currency: 'INR',
-       minimumFractionDigits: 2
+   // Add up all free items
+   FREE_ITEMS_CONFIG.forEach(item => {
+     if (item.isFixed) {
+        totalStruckVal += item.yearlyStruck;
+     } else {
+        totalStruckVal += isYearly ? item.yearlyStruck : item.monthlyStruck;
+     }
    });
 
+   const formattedTotalStruck = formatCurrency(totalStruckVal);
+
+   if (isLoadingAuth) {
+     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+   }
 
   return (
     <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 max-w-7xl">
@@ -324,37 +415,45 @@ function CheckoutContent() {
                     <div className="flex justify-between items-baseline">
                          <span className="text-base text-gray-700">{planLabel}</span>
                          <div className="text-right">
-                            <span className="text-sm text-gray-400 line-through mr-2">{fakeOriginalPrice}</span>
+                            {planStruckPrice && (
+                                <span className="text-sm text-gray-400 line-through mr-2">
+                                    {formattedPlanStruck}
+                                </span>
+                            )}
                             <span className="text-base font-bold text-gray-900">{formattedPrice}</span>
                          </div>
                     </div>
 
-                    {/* 12 Months Hosting (Requested Item) */}
-                    <div className="flex justify-between items-baseline">
-                         <span className="text-base text-gray-700">12 Months Hosting</span>
-                         <div className="text-right">
-                            <span className="text-sm text-gray-400 line-through mr-2">₹5,988.00</span>
-                            <span className="text-base font-bold text-gray-900">₹0.00</span>
-                         </div>
-                    </div>
-
                     {/* Free Items Loop */}
-                    {freeItems.map((item, i) => (
-                        <div key={i} className="flex justify-between items-baseline">
-                            <span className="text-base text-gray-700">{item.name}</span>
-                            <div className="text-right">
-                                <span className="text-sm text-gray-400 line-through mr-2">₹{item.original}</span>
-                                <span className="text-base font-bold text-gray-900">₹0.00</span>
+                    {FREE_ITEMS_CONFIG.map((item, i) => {
+                        const struckVal = item.isFixed
+                            ? item.yearlyStruck
+                            : (isYearly ? item.yearlyStruck : item.monthlyStruck);
+
+                        let displayName = item.name;
+                        if (item.dynamicLabel) {
+                            displayName = isYearly ? '12 Months Hosting' : '1 Month Hosting';
+                        }
+
+                        return (
+                            <div key={i} className="flex justify-between items-baseline">
+                                <span className="text-base text-gray-700">{displayName}</span>
+                                <div className="text-right">
+                                    <span className="text-sm text-gray-400 line-through mr-2">
+                                        {formatCurrency(struckVal)}
+                                    </span>
+                                    <span className="text-base font-bold text-gray-900">₹0.00</span>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 <div className="border-t border-gray-200 pt-4 mb-6">
                      <div className="flex justify-between items-center mb-2">
                         <span className="text-xl font-bold text-gray-900">Total</span>
                         <div className="text-right">
-                            <span className="block text-sm text-gray-400 line-through">{totalStruck}</span>
+                            <span className="block text-sm text-gray-400 line-through">{formattedTotalStruck}</span>
                             <span className="text-3xl font-bold text-gray-900">{formattedPrice}</span>
                          </div>
                     </div>
