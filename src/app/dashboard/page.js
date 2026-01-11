@@ -20,7 +20,9 @@ export default function DashboardPage() {
     const [data, setData] = useState({
         orders: [],
         orderItems: [],
-        customers: []
+        customers: [],
+        visitors: [], // Timestamp-only objects from client_analytics
+        totalVisitorsCount: 0 // All time unique count
     });
 
     useEffect(() => {
@@ -35,11 +37,9 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
         setLoading(true);
         try {
-            // 1. Get User
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // 2. Get Website ID
             const { data: website } = await supabase
                 .from("websites")
                 .select("id")
@@ -52,43 +52,33 @@ export default function DashboardPage() {
                 return;
             }
 
-            // 3. Fetch Data in Parallel (Mirroring OrdersPage strategy for reliability)
-            // Fetch ALL orders (or limit to a reasonable high number like 1000 for dashboard analytics)
-            // We removed the 365 days filter to ensure we get data if it's older (like test data).
-            // But we will limit to 500 latest orders to keep it performant.
+            // --- 1. Fetch Orders (Limit 500) ---
             const { data: orders, error: ordersError } = await supabase
                 .from("orders")
                 .select("*")
                 .eq("website_id", website.id)
-                .neq("status", "canceled") // Metric requirement: exclude canceled
+                .neq("status", "canceled")
                 .order("created_at", { ascending: false })
                 .limit(500);
 
             if (ordersError) throw ordersError;
 
-            if (!orders || orders.length === 0) {
-                 setData({ orders: [], orderItems: [], customers: [] });
-                 setLoading(false);
-                 return;
-            }
+            // --- 2. Fetch Related Order Data ---
+            const orderIds = (orders || []).map(o => o.id);
+            const customerIds = [...new Set((orders || []).map(o => o.customer_id).filter(Boolean))];
 
-            // Collect IDs
-            const orderIds = orders.map(o => o.id);
-            const customerIds = [...new Set(orders.map(o => o.customer_id).filter(Boolean))];
-
-            // Fetch Related Data
             const [
                 { data: customersRes },
                 { data: itemsRes }
             ] = await Promise.all([
                  customerIds.length > 0 ? supabase.from('customers').select('*').in('id', customerIds) : Promise.resolve({ data: [] }),
-                 supabase.from('order_items').select('*').in('order_id', orderIds)
+                 orderIds.length > 0 ? supabase.from('order_items').select('*').in('order_id', orderIds) : Promise.resolve({ data: [] })
             ]);
 
             const customers = customersRes || [];
             let items = itemsRes || [];
 
-            // Fetch Products for Items
+            // --- 3. Fetch Products ---
             const productIds = [...new Set(items.map(i => i.product_id))];
             const { data: products } = productIds.length > 0
                 ? await supabase.from('products').select('id, name, image_url, price').in('id', productIds)
@@ -98,27 +88,56 @@ export default function DashboardPage() {
             const customersMap = (customers || []).reduce((acc, c) => ({ ...acc, [c.id]: c }), {});
 
             // Join Data in Memory
-            const enrichedOrders = orders.map(o => ({
+            const enrichedOrders = (orders || []).map(o => ({
                 ...o,
                 customers: customersMap[o.customer_id] || { name: 'Unknown', email: '' }
             }));
 
-            // Enrich items with products and order date (for BestSellers logic)
-            // We map order date to items
-            const ordersDateMap = orders.reduce((acc, o) => ({...acc, [o.id]: o.created_at}), {});
+            const ordersDateMap = (orders || []).reduce((acc, o) => ({...acc, [o.id]: o.created_at}), {});
 
             const enrichedItems = items.map(i => ({
                 ...i,
                 products: productsMap[i.product_id],
-                orders: { created_at: ordersDateMap[i.order_id] } // Mocking structure expected by BestSellers
+                orders: { created_at: ordersDateMap[i.order_id] }
             }));
 
-            // --- Calculate Top Metrics (Last 30 Days vs Prior 30 Days) ---
+            // --- 4. Fetch Traffic (Visitors) ---
+            // For "Traffic vs Total":
+            // Total = All time unique visitors.
+            // Period = Unique visitors in that period.
+            // We'll fetch recent analytics events to calculate period traffic.
+            // And we'll try to get a total count.
+            // Since counting distinct jsonb fields is hard in simple Supabase query, we will rely on client-side counting of a fetched sample for the *chart* (Period Traffic).
+            // For "Total", we might just count rows as a proxy if we can't do distinct, OR if `visitor_id` is reliable, we accept that for now we only know the total of what we fetch.
+            // Actually, let's fetch last 5000 analytics events. That should cover "Week/Month" traffic well. "Year" might be truncated but acceptable for dashboard v1.
+
+            const { data: analyticsEvents } = await supabase
+                .from("client_analytics")
+                .select("timestamp, location")
+                .eq("website_id", website.id)
+                .order("timestamp", { ascending: false })
+                .limit(5000);
+
+            // Extract visitors with timestamps
+            // Structure: location: { visitor_id: '...' }
+            const visitors = (analyticsEvents || []).map(e => ({
+                timestamp: e.timestamp,
+                visitorId: e.location?.visitor_id || e.location?.ip || 'anon'
+            }));
+
+            // Calculate "Total Visitors" (All time estimate based on fetch limit or just rows count if we assume 1 visit = 1 row? No, 1 row = 1 pageview usually).
+            // We need unique visitors from the fetched set at least.
+            // A true "Total All Time" requires a count query that we can't easily do distinct on JSONB without SQL function.
+            // For now, we will use the unique count from our fetched sample as "Total (in fetched history)".
+            // If the user has millions, this will be wrong, but we can't solve Big Data analytics in this step without backend changes (e.g. creating a `visitors` table or SQL view).
+            // We will proceed with the "Best Effort" unique count from the 5000 rows.
+            const uniqueVisitorsAllTime = new Set(visitors.map(v => v.visitorId)).size;
+
+            // --- 5. Calculate Metrics ---
             const now = new Date();
             const thirtyDaysAgo = subDays(now, 30);
             const sixtyDaysAgo = subDays(now, 60);
 
-            // Filter for periods
             const currentPeriodOrders = enrichedOrders.filter(o => {
                 const d = new Date(o.created_at);
                 return isAfter(d, thirtyDaysAgo) && isBefore(d, now);
@@ -128,12 +147,10 @@ export default function DashboardPage() {
                 return isAfter(d, sixtyDaysAgo) && isBefore(d, thirtyDaysAgo);
             });
 
-            // Sales
             const currentSales = currentPeriodOrders.reduce((sum, o) => sum + Number(o.total_amount), 0);
             const priorSales = priorPeriodOrders.reduce((sum, o) => sum + Number(o.total_amount), 0);
             const salesChange = calculateChange(currentSales, priorSales);
 
-            // Units
             const getUnits = (periodOrders) => {
                 const periodOrderIds = new Set(periodOrders.map(o => o.id));
                 return enrichedItems
@@ -144,37 +161,22 @@ export default function DashboardPage() {
             const priorUnits = getUnits(priorPeriodOrders);
             const unitsChange = calculateChange(currentUnits, priorUnits);
 
-            // AOV
             const currentAOV = currentPeriodOrders.length ? (currentSales / currentPeriodOrders.length) : 0;
             const priorAOV = priorPeriodOrders.length ? (priorSales / priorPeriodOrders.length) : 0;
             const aovChange = calculateChange(currentAOV, priorAOV);
 
             setMetrics({
-                sales: {
-                    value: currentSales,
-                    change: salesChange
-                },
-                units: {
-                    value: currentUnits,
-                    change: unitsChange
-                },
-                aov: {
-                    value: currentAOV,
-                    change: aovChange
-                }
+                sales: { value: currentSales, change: salesChange },
+                units: { value: currentUnits, change: unitsChange },
+                aov: { value: currentAOV, change: aovChange }
             });
-
-            // For User Growth: We need ALL customers, not just those in recent orders.
-            // Fetch all customers for website (separate fetch)
-            const { data: allCustomers } = await supabase
-                .from("customers")
-                .select("id, created_at")
-                .eq("website_id", website.id);
 
             setData({
                 orders: enrichedOrders,
                 orderItems: enrichedItems,
-                customers: allCustomers || []
+                customers: customers || [],
+                visitors: visitors,
+                totalVisitorsCount: uniqueVisitorsAllTime
             });
 
         } catch (error) {
@@ -258,9 +260,12 @@ export default function DashboardPage() {
 
       {/* Right Column (Sidebar) */}
       <div className="xl:col-span-1 flex flex-col gap-8">
-         {/* User Growth */}
+         {/* Traffic Growth (Renamed from User Growth) */}
          <div className="h-[400px]">
-             <UserGrowthChart customers={data.customers} />
+             <UserGrowthChart
+                 visitors={data.visitors}
+                 totalVisitorsCount={data.totalVisitorsCount}
+             />
          </div>
 
          {/* Top 3 Best Sellers */}

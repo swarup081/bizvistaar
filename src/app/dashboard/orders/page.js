@@ -87,7 +87,7 @@ function OrderDetailsModal({ order, isOpen, onClose, onUpdate }) {
             {/* Header */}
             <div className="flex justify-between items-start mb-6 border-b pb-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Order #{order.id}</h2>
+                    <Dialog.Title className="text-2xl font-bold text-gray-900">Order #{order.id}</Dialog.Title>
                     <p className="text-sm text-gray-500">{new Date(order.created_at).toLocaleString()}</p>
                 </div>
                 <div className="flex gap-2">
