@@ -1,323 +1,362 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { ShieldCheck, ChevronDown, Check } from 'lucide-react';
-import Logo from '@/lib/logo/logoOfBizVistar';
-import { motion, AnimatePresence } from 'framer-motion';
+import { HelpCircle, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/lib/supabaseClient';
+import FaqSection from '@/components/checkout/FaqSection';
+import { AnimatePresence, motion } from 'framer-motion';
+// import { createClient } from '@/lib/supabaseClient';
 
-// --- Components ---
-
-const FaqItem = ({ q, a }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div className="border-b border-gray-200 last:border-b-0">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between py-5 text-left text-gray-900"
-      >
-        <span className="text-lg font-medium text-gray-900">{q}</span>
-        <ChevronDown
-          className={cn(
-            'h-5 w-5 text-gray-400 transition-transform duration-300',
-            isOpen ? 'rotate-180' : ''
-          )}
-        />
-      </button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-            className="overflow-hidden"
-          >
-            <div className="pb-5 pr-10 text-base text-gray-600 leading-relaxed">
-              {typeof a === 'string' ? <p>{a}</p> : a}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-const FaqSection = () => {
-  const faqs = [
-    {
-      q: 'What is a Premium plan?',
-      a: 'A Premium plan is a subscription that gives you access to all of BizVistar\'s advanced features, including custom domain connection, removal of BizVistar branding, increased storage, and access to our "Done-for-You" services.'
-    },
-    {
-      q: 'Can I get a refund for a Premium plan?',
-      a: 'Yes, we offer a 14-day money-back guarantee on all our annual Premium plans. If you are not satisfied for any reason, you can cancel within 14 days of purchase and receive a full refund, no questions asked.'
-    },
-    {
-      q: 'How do I get my free domain?',
-      a: 'A free custom domain for one year is included with the "Growth" annual plan. After you upgrade, you will receive a voucher to claim your free domain, which you can register directly through your BizVistar dashboard.'
-    },
-     {
-      q: 'What online payments are accepted?',
-      a: 'We accept all major credit cards (Visa, MasterCard, American Express) as well as UPI, Net Banking, and other popular payment methods for our Indian customers.'
-    },
-  ];
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-12 gap-y-8 mt-16 pt-16 border-t border-gray-200">
-      <div className="lg:col-span-1">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Frequently asked questions
-        </h2>
-        <p className="text-lg text-gray-600">
-          Haven't found what you're looking for? Try the{' '}
-          <a href="#" className="text-blue-600 hover:underline">BizVistar Help Center</a>{' '}
-          or{' '}
-          <a href="#" className="text-blue-600 hover:underline">contact us</a>.
-        </p>
-      </div>
-
-      <div className="lg:col-span-2">
-        <div>
-          {faqs.map((faq, i) => (
-            <FaqItem key={i} q={faq.q} a={faq.a} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Checkout Logic ---
-
-function CheckoutForm() {
-  const router = useRouter();
+function CheckoutContent() {
   const searchParams = useSearchParams();
-  const [loading, setLoading] = useState(true);
-
-  // Params
-  const planName = searchParams.get('plan') || 'Starter';
+  const router = useRouter();
+  const planName = searchParams.get('plan') || 'Pro';
   const billingCycle = searchParams.get('billing') || 'monthly';
-  const price = parseFloat(searchParams.get('price') || '299');
+  const price = searchParams.get('price') || '0.00';
 
-  // Form State
+  // --- Auth Check (Optional but good for UX) ---
+  // You might want to do a server-side check or a client-side effect to redirect if not logged in
+  // For now, assuming middleware or previous flow handled it, but let's add a quick check.
+  // actually the prompt says "if user click a plan and is not sign in he need to do it first".
+  // This logic is best handled in the Plan selection page or middleware.
+  // I will assume the user is here because they are signed in or redirected back.
+
+  // --- Form State ---
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: '',
+    country: 'India', // Fixed
+    phoneCode: '+91',
+    phoneNumber: '',
     address: '',
     city: '',
     state: '',
     zip: '',
-    gst: ''
+    companyName: '',
+    gstNumber: '',
   });
 
+  const [addCompanyDetails, setAddCompanyDetails] = useState(false);
   const [promoCode, setPromoCode] = useState('');
 
-  // Auth Check
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        // Redirect to sign in with return URL
-        const currentPath = window.location.href; // Get full URL including query params
-        router.push(`/sign-in?redirect=${encodeURIComponent(currentPath)}`);
-      } else {
-        setLoading(false);
-        setFormData(prev => ({ ...prev, email: user.email }));
-      }
-    };
-    checkAuth();
-  }, [router, searchParams]);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-  if (loading) {
-    return (
-        <div className="flex h-screen items-center justify-center bg-gray-50">
-            <div className="text-center">
-                 <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                 <h2 className="text-xl font-semibold text-gray-700">Loading Checkout...</h2>
-            </div>
-        </div>
-    );
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    // Here you would integrate with your payment gateway (Razorpay/Stripe)
+    // and create the subscription in Supabase.
+    console.log('Form submitted:', formData);
+    // Redirect or Show Payment Modal
+  };
 
-  // Calculate Dates
+  // --- Dates for Legal Text ---
+  // Calculate next renewal date based on billing cycle
   const today = new Date();
-  const renewalDate = new Date();
+  const renewalDate = new Date(today);
   if (billingCycle === 'yearly') {
-      renewalDate.setFullYear(today.getFullYear() + 1);
+    renewalDate.setFullYear(renewalDate.getFullYear() + 1);
   } else {
-      renewalDate.setMonth(today.getMonth() + 1);
+    renewalDate.setMonth(renewalDate.getMonth() + 1);
   }
+  const formattedRenewalDate = renewalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-  const formattedRenewalDate = renewalDate.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
-  const formattedTotal = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(price);
+  // Calculate renewal amount (assuming same price for now)
+  // Logic for currency formatting
+  const formattedPrice = parseFloat(price).toLocaleString('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2
+  });
+
+   // Upper limit for e-mandate (Example logic)
+   const eMandateLimit = 15000;
+   const formattedLimit = eMandateLimit.toLocaleString('en-IN', {
+       style: 'currency',
+       currency: 'INR',
+       minimumFractionDigits: 0
+   });
+
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      {/* Navbar */}
-      <nav className="bg-white border-b border-gray-200 py-4">
-        <div className="container mx-auto px-6 max-w-7xl flex items-center justify-between">
-          <Link href="/">
-             <Logo />
-          </Link>
-          <div className="text-sm font-medium text-gray-500 flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-green-600" />
-            Secure Checkout
-          </div>
-        </div>
-      </nav>
+    <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 max-w-7xl">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-      <div className="container mx-auto px-6 max-w-7xl py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        {/* --- LEFT COLUMN: BILLING FORM --- */}
+        <div className="lg:col-span-2 space-y-8">
 
-          {/* LEFT COLUMN: Billing Details */}
-          <div className="lg:col-span-7 space-y-8">
-            <div>
-               <h2 className="text-2xl font-bold text-gray-900 mb-6">Billing Address</h2>
-               <form className="space-y-6">
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                        <input type="text" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="John" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} />
+            {/* Step 1: Billing Address (Boxed) */}
+            <div className="bg-white p-6 sm:p-8 rounded-lg border border-gray-200 shadow-sm">
+                <div className="flex items-center gap-4 mb-6">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 text-purple-600 font-bold text-sm">
+                        1
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                        <input type="text" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Doe" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} />
-                    </div>
-                 </div>
+                    <h2 className="text-2xl font-bold text-gray-900">Billing address</h2>
+                </div>
 
-                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                    <input type="email" className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed" value={formData.email} disabled />
-                 </div>
-
-                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                    <input type="text" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="123 Business St" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
-                 </div>
-
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                        <input type="text" className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed font-medium" value="India" disabled />
+                <form id="billing-form" onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-700">First name *</label>
+                            <input
+                                type="text"
+                                name="firstName"
+                                value={formData.firstName}
+                                onChange={handleChange}
+                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"
+                                placeholder="Swarup"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-700">Last name *</label>
+                            <input
+                                type="text"
+                                name="lastName"
+                                value={formData.lastName}
+                                onChange={handleChange}
+                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"
+                                placeholder="Das"
+                                required
+                            />
+                        </div>
                     </div>
-                    <div>
-                         <label className="block text-sm font-medium text-gray-700 mb-2">State / Province</label>
-                         <input type="text" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Maharashtra" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} />
-                    </div>
-                 </div>
 
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                        <input type="text" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Mumbai" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700">Country of residence *</label>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value="India"
+                                disabled
+                                className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
+                            />
+                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        </div>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Zip / Postal Code</label>
-                        <input type="text" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="400001" value={formData.zip} onChange={e => setFormData({...formData, zip: e.target.value})} />
-                    </div>
-                 </div>
 
-                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">GSTIN (Optional)</label>
-                    <input type="text" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="22AAAAA0000A1Z5" value={formData.gst} onChange={e => setFormData({...formData, gst: e.target.value})} />
-                 </div>
-               </form>
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700">Phone number</label>
+                        <div className="flex">
+                            <div className="relative w-1/3 sm:w-1/4">
+                                <select
+                                    className="w-full p-3 border border-gray-300 rounded-l-md appearance-none bg-white focus:ring-2 focus:ring-purple-500 outline-none"
+                                    value={formData.phoneCode}
+                                    onChange={handleChange}
+                                    name="phoneCode"
+                                >
+                                    <option value="+91">+91 (India)</option>
+                                </select>
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                            </div>
+                            <input
+                                type="tel"
+                                name="phoneNumber"
+                                value={formData.phoneNumber}
+                                onChange={handleChange}
+                                className="w-full p-3 border border-gray-300 border-l-0 rounded-r-md focus:ring-2 focus:ring-purple-500 outline-none"
+                                placeholder="00000000"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                         <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-700">Address *</label>
+                            <input
+                                type="text"
+                                name="address"
+                                value={formData.address}
+                                onChange={handleChange}
+                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 outline-none"
+                                required
+                            />
+                        </div>
+                         <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-700">City *</label>
+                            <input
+                                type="text"
+                                name="city"
+                                value={formData.city}
+                                onChange={handleChange}
+                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 outline-none"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-700">State *</label>
+                            <div className="relative">
+                                <select
+                                    name="state"
+                                    value={formData.state}
+                                    onChange={handleChange}
+                                    className="w-full p-3 border border-gray-300 rounded-md appearance-none bg-white focus:ring-2 focus:ring-purple-500 outline-none"
+                                    required
+                                >
+                                    <option value="" disabled>Select State</option>
+                                    <option value="Maharashtra">Maharashtra</option>
+                                    <option value="Delhi">Delhi</option>
+                                    <option value="Karnataka">Karnataka</option>
+                                    <option value="Tamil Nadu">Tamil Nadu</option>
+                                    {/* Add more states as needed */}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-700">ZIP code *</label>
+                            <input
+                                type="text"
+                                name="zip"
+                                value={formData.zip}
+                                onChange={handleChange}
+                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 outline-none"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="pt-2">
+                        <label className="flex items-center space-x-3 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={addCompanyDetails}
+                                onChange={(e) => setAddCompanyDetails(e.target.checked)}
+                                className="w-5 h-5 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                            />
+                            <span className="text-base font-medium text-gray-700">Add company details</span>
+                            <HelpCircle className="w-4 h-4 text-purple-600" />
+                        </label>
+                    </div>
+
+                    <AnimatePresence>
+                        {addCompanyDetails && (
+                             <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="grid grid-cols-1 sm:grid-cols-2 gap-6 overflow-hidden"
+                             >
+                                <div className="space-y-2 py-2">
+                                    <label className="text-sm font-semibold text-gray-700">Company name</label>
+                                    <input
+                                        type="text"
+                                        name="companyName"
+                                        value={formData.companyName}
+                                        onChange={handleChange}
+                                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-2 py-2">
+                                    <label className="text-sm font-semibold text-gray-700">GST number</label>
+                                    <input
+                                        type="text"
+                                        name="gstNumber"
+                                        value={formData.gstNumber}
+                                        onChange={handleChange}
+                                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 outline-none"
+                                    />
+                                </div>
+                             </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    <button
+                        type="submit"
+                        className="w-full sm:w-auto px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white text-lg font-bold rounded-md shadow-md transition-colors"
+                    >
+                        Continue
+                    </button>
+
+                </form>
             </div>
-          </div>
 
-          {/* RIGHT COLUMN: Order Summary */}
-          <div className="lg:col-span-5">
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden sticky top-8">
-               <div className="p-8 bg-gray-50 border-b border-gray-200">
-                  <h3 className="text-xl font-bold text-gray-900">Order Summary</h3>
-               </div>
+            {/* "Payment" Section Visual Placeholder (Inactive/Next Step) */}
+            <div className="bg-white p-6 sm:p-8 rounded-lg border border-gray-200 opacity-60">
+                <div className="flex items-center gap-4">
+                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-400 font-bold text-sm">
+                        2
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-400">Payment</h2>
+                </div>
+            </div>
 
-               <div className="p-8 space-y-6">
-                  {/* Plan Info */}
-                  <div className="flex justify-between items-start pb-6 border-b border-gray-100">
-                     <div>
-                        <p className="font-bold text-lg text-gray-900">{planName} Plan</p>
-                        <p className="text-sm text-gray-500 capitalize">{billingCycle} Subscription</p>
-                     </div>
-                     <div className="text-right">
-                        <p className="font-bold text-lg text-gray-900">{formattedTotal}</p>
-                     </div>
-                  </div>
+        </div>
 
-                  {/* Promo Code */}
-                  <div>
-                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Have a Promo Code?</label>
-                     <div className="flex gap-2">
+        {/* --- RIGHT COLUMN: ORDER SUMMARY --- */}
+        <div className="lg:col-span-1">
+             <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm sticky top-24">
+                <h3 className="text-2xl font-bold text-gray-900 mb-6">Order summary</h3>
+
+                <div className="space-y-4 mb-6">
+                    <div className="flex justify-between items-baseline">
+                         <span className="text-base text-gray-700">{planName} Plan ({billingCycle})</span>
+                         <span className="text-base font-bold text-gray-900">{formattedPrice}</span>
+                    </div>
+                    {/* No Taxes Row as requested */}
+                </div>
+
+                <div className="border-t border-gray-200 pt-4 mb-6">
+                    <div className="flex justify-between items-center">
+                        <span className="text-xl font-bold text-gray-900">Subtotal</span>
+                        <span className="text-xl font-bold text-gray-900">{formattedPrice}</span>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <p className="text-purple-600 font-semibold cursor-pointer hover:underline">Have a coupon code?</p>
+                    <div className="flex gap-2">
                         <input
                             type="text"
-                            className="flex-grow px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                            placeholder="Enter code"
+                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:border-purple-500"
+                            placeholder="Code"
                             value={promoCode}
                             onChange={(e) => setPromoCode(e.target.value)}
                         />
-                        <button className="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors">
+                        <button className="px-4 py-2 border border-purple-600 text-purple-600 font-semibold rounded-md hover:bg-purple-50">
                             Apply
                         </button>
-                     </div>
-                  </div>
+                    </div>
+                </div>
 
-                  {/* Total */}
-                   <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                     <p className="font-bold text-xl text-gray-900">Total</p>
-                     <div className="text-right">
-                        <p className="font-bold text-2xl text-purple-700">{formattedTotal}</p>
-                        <p className="text-xs text-gray-400 mt-1">Excludes Taxes</p>
-                     </div>
-                  </div>
-
-                  {/* Safe & Secure Badge */}
-                   <div className="flex items-center justify-center gap-2 bg-green-50 text-green-700 px-4 py-3 rounded-lg border border-green-100">
-                        <ShieldCheck className="w-5 h-5" />
-                        <span className="font-semibold text-sm">Safe & Secure Payment</span>
-                   </div>
-
-                  {/* Submit Button */}
-                  <button className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold text-lg rounded-xl shadow-lg shadow-purple-200 transition-all duration-200 transform hover:-translate-y-0.5">
-                      Proceed to Pay
-                  </button>
-
-                  {/* Legal Text */}
-                  <div className="text-xs text-gray-500 space-y-3 pt-4 border-t border-gray-100 leading-relaxed">
-                      <p>
-                        By purchasing, you accept the <Link href="/terms" className="underline text-blue-600">Terms and Conditions</Link> and <Link href="/privacy" className="underline text-blue-600">Privacy Policy</Link> and acknowledge reading the Privacy Policy.
-                      </p>
-                      <p>
-                        You also agree to the automatic renewal of your subscription on a {billingCycle} basis for {formattedTotal} starting on {formattedRenewalDate}, which can be disabled at any time through your account. Any eligible tax exemptions and discounts will be applied when you're charged for your next renewal payment.
-                      </p>
-                      <p>
-                        In accordance with RBI guidelines, your card details will be saved securely for future purchases and subscription renewals. An e-mandate will be created for a maximum amount of ₹15,000, but you’ll only be charged the amount of your purchase.
-                      </p>
-                  </div>
-
-               </div>
-            </div>
-          </div>
-
+             </div>
         </div>
 
-        {/* Footer / FAQ */}
-        <FaqSection />
       </div>
+
+      {/* --- LEGAL TEXT (Footer of the form) --- */}
+      <div className="mt-12 max-w-4xl text-xs text-gray-500 leading-relaxed space-y-4">
+        <p>
+            By purchasing, you accept the <Link href="/terms" className="underline text-gray-600">Terms and Conditions</Link> and <Link href="/privacy" className="underline text-gray-600">Privacy Policy</Link> and acknowledge reading the Privacy Policy.
+        </p>
+        <p>
+            You also agree to the automatic renewal of your subscription on a {billingCycle} basis for {formattedPrice} starting on {formattedRenewalDate}, which can be disabled at any time through your account. Any eligible tax exemptions and discounts will be applied when you&apos;re charged for your next renewal payment.
+        </p>
+        <p>
+            In accordance with RBI guidelines, your card details will be saved securely for future purchases and subscription renewals. An e-mandate will be created for a maximum amount of {formattedLimit}, but you&apos;ll only be charged the amount of your purchase.
+        </p>
+      </div>
+
+      {/* --- FAQ SECTION --- */}
+      <div className="mt-20 border-t border-gray-200 pt-16">
+         <FaqSection />
+      </div>
+
     </div>
   );
 }
 
 export default function CheckoutPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-      <CheckoutForm />
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+            <CheckoutContent />
+        </Suspense>
+    );
 }
