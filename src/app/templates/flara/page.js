@@ -116,7 +116,7 @@ export default function CandleaPage() {
                                 <ArrowRightIcon />
                             </Link>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
                             {collectionProducts.map(item => (
                                 <Link 
                                 href={`${basePath}/product/${item.id}`}
@@ -147,7 +147,7 @@ export default function CandleaPage() {
                 <Editable focusId="collection">
                     <div className="container mx-auto px-6 text-center max-w-screen-2xl">
                         <h2 className="text-4xl font-bold text-brand-text mb-16 font-serif">{businessData.bestSellers.title}</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16 items-stretch">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-x-8 gap-y-16 items-stretch">
                             {bestSellerProducts.map(item => (
                                 <ProductCard 
                                     key={item.id} 

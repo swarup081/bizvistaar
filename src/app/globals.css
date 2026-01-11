@@ -257,7 +257,7 @@
 @layer utilities {
   .marquee {
     /* --- THIS IS THE FIX --- */
-    animation: marquee 40s linear infinite;
+    animation: marquee 20s linear infinite;
     /* --- END OF FIX --- */
     flex-shrink: 0; 
   }

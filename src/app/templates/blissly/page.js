@@ -218,7 +218,7 @@ export default function BrewhavenPage() {
                 <section id="specialty" className="py-24">
                     <div className="container mx-auto px-6 text-center max-w-screen-2xl">
                         <h2 className="text-4xl md:text-5xl font-bold text-brand-text mb-16">{businessData.specialty.title}</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
                             {specialtyProducts.map((item) => (
                                 <ProductCard 
                                     key={item.id} 

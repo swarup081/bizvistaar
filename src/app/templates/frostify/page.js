@@ -88,7 +88,7 @@ export default function FrostifyPage() {
                         <h2 className="text-4xl font-serif text-[var(--color-primary)] text-center mb-12">{businessData.gallery.title}</h2>
                         
                         {/* Grid of Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                             {(businessData.gallery.items || []).map((item) => (
                                 <ProductCard key={item.id} item={item} />
                             ))}

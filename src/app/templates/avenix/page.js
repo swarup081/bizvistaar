@@ -306,7 +306,7 @@ export default function AvenixPage() {
                         <div className="container mx-auto px-6 text-center max-w-screen-2xl">
                             <p className="text-sm uppercase tracking-widest font-sans opacity-70">{businessData.newArrivals.heading}</p>
                             <h2 className="text-5xl font-serif font-medium text-brand-text mt-4">{businessData.newArrivals.title}</h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16 mt-16 items-start">
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-x-8 gap-y-16 mt-16 items-start">
                                 {newArrivalsProducts.map(item => (
                                     <ProductCard 
                                         key={item.id} 

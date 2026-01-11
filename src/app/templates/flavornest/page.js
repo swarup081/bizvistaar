@@ -55,7 +55,7 @@ export default function FlavorNestPage() {
                 <section id="menu" className="py-16 bg-brand-primary"> {/* <-- ID ADDED */}
                     <div className="container mx-auto px-6 max-w-screen-2xl">
                         <h2 className="text-4xl font-bold text-center text-brand-secondary mb-12 font-serif">{businessData.menu.title}</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                             {signatureProducts.map(item => (
                                 <ProductCard 
                                     key={item.id} 
