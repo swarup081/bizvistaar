@@ -10,8 +10,8 @@ import StateSelector from '@/components/checkout/StateSelector';
 import { AnimatePresence, motion } from 'framer-motion';
 import { saveBillingDetailsAction, createSubscriptionAction } from '@/app/actions/razorpayActions';
 import { getStandardPlanId } from '@/app/config/razorpay-config';
-import { createBrowserClient } from '@supabase/ssr';
 import { validateCouponAction } from '@/app/actions/razorpayActions';
+import { supabase } from '@/lib/supabaseClient';
 
 // --- CONFIGURATION ---
 
@@ -135,18 +135,23 @@ function CheckoutContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // --- Auth Check ---
   useEffect(() => {
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    );
-
     const checkUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            // Redirect to sign in, preserving current checkout state via redirect param
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                // Redirect to sign in, preserving current checkout state via redirect param
+                const currentPath = window.location.pathname + window.location.search;
+                router.push(`/sign-in?redirect=${encodeURIComponent(currentPath)}`);
+            } else {
+                setIsCheckingAuth(false);
+            }
+        } catch (error) {
+            console.error("Auth check failed", error);
+             // Safe fallback: redirect
             const currentPath = window.location.pathname + window.location.search;
             router.push(`/sign-in?redirect=${encodeURIComponent(currentPath)}`);
         }
@@ -315,6 +320,14 @@ function CheckoutContent() {
         setIsProcessing(false);
     }
   };
+
+  if (isCheckingAuth) {
+      return (
+          <div className="min-h-screen flex items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+          </div>
+      );
+  }
 
 
   return (
