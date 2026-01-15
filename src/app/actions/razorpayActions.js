@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Razorpay from 'razorpay';
-import RAZORPAY_CONFIG, { getPlanId, getKeyId, getRazorpayMode, getStandardPlanId } from '../config/razorpay-config';
+import RAZORPAY_CONFIG, { getPlanId, getKeyId, getRazorpayMode, getStandardPlanId, COUPON_CONFIG } from '../config/razorpay-config';
 
 // Initialize Supabase Admin (Service Role)
 const supabaseAdmin = createClient(
@@ -61,6 +61,25 @@ export async function saveBillingDetailsAction(billingData) {
     console.error("Error saving billing details:", err);
     return { success: false, error: err.message };
   }
+}
+
+export async function validateCouponAction(couponCode) {
+    const normalized = couponCode ? couponCode.trim().toUpperCase() : '';
+    const config = COUPON_CONFIG[normalized];
+
+    if (config && config.active) {
+        // Check Expiry
+        if (config.expiresAt) {
+            const now = new Date();
+            const expires = new Date(config.expiresAt);
+            if (now > expires) {
+                return { valid: false, message: "Coupon Expired" };
+            }
+        }
+        return { valid: true };
+    }
+
+    return { valid: false, message: "Invalid Coupon" };
 }
 
 /**

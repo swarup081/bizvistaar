@@ -10,6 +10,8 @@ import StateSelector from '@/components/checkout/StateSelector';
 import { AnimatePresence, motion } from 'framer-motion';
 import { saveBillingDetailsAction, createSubscriptionAction } from '@/app/actions/razorpayActions';
 import { getStandardPlanId } from '@/app/config/razorpay-config';
+import { createBrowserClient } from '@supabase/ssr';
+import { validateCouponAction } from '@/app/actions/razorpayActions';
 
 // --- CONFIGURATION ---
 
@@ -80,7 +82,8 @@ function CheckoutContent() {
   // Resolve Standard Plan ID immediately
   const standardPlanId = getStandardPlanId(planName, billingCycle);
 
-  // --- Styling Logic ---
+  // --- Styling Logic & Calculations ---
+  const planLabel = isYearly ? '12-month plan' : 'Monthly plan';
   let planStruckPrice = null;
 
   if (isYearly) {
@@ -94,6 +97,19 @@ function CheckoutContent() {
       minimumFractionDigits: 2
     });
   };
+
+  // --- Summary Calculations ---
+  let totalStruckVal = planStruckPrice || finalPrice;
+  FREE_ITEMS_CONFIG.forEach(item => {
+     if (item.isFixed) {
+        totalStruckVal += item.yearlyStruck;
+     } else {
+        totalStruckVal += isYearly ? item.yearlyStruck : item.monthlyStruck;
+     }
+  });
+  const formattedTotalStruck = formatCurrency(totalStruckVal);
+  const formattedPrice = formatCurrency(finalPrice);
+  const formattedPlanStruck = planStruckPrice ? formatCurrency(planStruckPrice) : null;
 
   // --- Form State ---
   const [formData, setFormData] = useState({
@@ -113,8 +129,31 @@ function CheckoutContent() {
   const [addCompanyDetails, setAddCompanyDetails] = useState(false);
   const [showPromo, setShowPromo] = useState(false);
   const [promoCode, setPromoCode] = useState('');
+  const [couponStatus, setCouponStatus] = useState(null); // 'valid', 'invalid', 'loading'
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  // --- Auth Check ---
+  useEffect(() => {
+    const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+
+    const checkUser = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            // Redirect to sign in, preserving current checkout state via redirect param
+            const currentPath = window.location.pathname + window.location.search;
+            router.push(`/sign-in?redirect=${encodeURIComponent(currentPath)}`);
+        }
+    };
+    checkUser();
+  }, [router]);
+
 
   // --- Load Razorpay Script ---
   useEffect(() => {
@@ -130,15 +169,77 @@ function CheckoutContent() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear field error on change
+    if (fieldErrors[name]) {
+        setFieldErrors(prev => ({ ...prev, [name]: null }));
+    }
   };
 
   const handleStateChange = (stateValue) => {
       setFormData(prev => ({ ...prev, state: stateValue }));
+      if (fieldErrors.state) setFieldErrors(prev => ({ ...prev, state: null }));
   };
+
+  const validateForm = () => {
+      const errors = {};
+
+      // Required Fields
+      if (!formData.firstName.trim()) errors.firstName = "First name is required";
+      if (!formData.lastName.trim()) errors.lastName = "Last name is required";
+      if (!formData.address.trim()) errors.address = "Address is required";
+      if (!formData.city.trim()) errors.city = "City is required";
+      if (!formData.state) errors.state = "State is required";
+
+      // Strict Validations
+      // Phone: 10 digits
+      const phoneRegex = /^\d{10}$/;
+      if (!phoneRegex.test(formData.phoneNumber)) {
+          errors.phoneNumber = "Phone number must be exactly 10 digits";
+      }
+
+      // Zip: 6 digits
+      const zipRegex = /^\d{6}$/;
+      if (!zipRegex.test(formData.zip)) {
+          errors.zip = "ZIP code must be exactly 6 digits";
+      }
+
+      setFieldErrors(errors);
+      return Object.keys(errors).length === 0;
+  };
+
+  const handleApplyCoupon = async (e) => {
+      e.preventDefault();
+      if (!promoCode.trim()) return;
+
+      setCouponStatus('loading');
+      setErrorMessage('');
+
+      try {
+          const res = await validateCouponAction(promoCode);
+          if (res.valid) {
+              setCouponStatus('valid');
+              setAppliedCoupon(promoCode);
+          } else {
+              setCouponStatus('invalid');
+              setAppliedCoupon(null);
+          }
+      } catch (err) {
+          setCouponStatus('invalid');
+          setAppliedCoupon(null);
+      }
+  };
+
 
   const handlePayment = async (e) => {
     e.preventDefault();
     setErrorMessage('');
+
+    // 1. Validate Form Client-side
+    if (!validateForm()) {
+        setErrorMessage("Please fix the highlighted errors before continuing.");
+        return;
+    }
+
     setIsProcessing(true);
 
     if (!standardPlanId) {
@@ -148,7 +249,7 @@ function CheckoutContent() {
     }
 
     try {
-        // 1. Save Billing Details
+        // 2. Save Billing Details
         const billingPayload = {
             fullName: `${formData.firstName} ${formData.lastName}`.trim(),
             address: formData.address,
@@ -163,35 +264,34 @@ function CheckoutContent() {
 
         const saveRes = await saveBillingDetailsAction(billingPayload);
         if (!saveRes.success) {
+             if (saveRes.error && saveRes.error.includes("Unauthorized")) {
+                 router.push('/sign-in');
+                 throw new Error("Session expired. Please sign in again.");
+             }
             throw new Error(saveRes.error || "Failed to save billing details.");
         }
 
-        // 2. Create Subscription
-        // SECURITY: We pass planName and billingCycle, NOT the ID.
-        // The server resolves the ID internally to prevent manipulation.
-        const subRes = await createSubscriptionAction(planName, billingCycle, promoCode);
+        // 3. Create Subscription
+        const codeToSend = appliedCoupon || (couponStatus === 'valid' ? promoCode : '');
+
+        const subRes = await createSubscriptionAction(planName, billingCycle, codeToSend);
         if (!subRes.success) {
             throw new Error(subRes.error || "Failed to initiate subscription.");
         }
 
-        // 3. Open Razorpay
+        // 4. Open Razorpay
         const options = {
             "key": subRes.keyId,
             "subscription_id": subRes.subscriptionId,
             "name": "BizVistar",
             "description": `${planName} Plan - ${billingCycle}`,
-            "image": "https://bizvistar.com/logo.png", // Or local logo path if valid url
+            "image": "https://bizvistar.com/logo.png",
             "handler": function (response) {
-                // Success Callback
-                // The webhook will handle the backend state.
-                // We can redirect the user to a success page or dashboard.
-                // We could explicitly call a verification action here if we wanted immediate UI feedback,
-                // but usually redirecting is enough.
                 router.push('/dashboard?payment_success=true');
             },
             "prefill": {
                 "name": billingPayload.fullName,
-                "email": "", // Ideally we should fetch user email from auth context or let Rzp handle it
+                "email": "",
                 "contact": formData.phoneNumber
             },
             "notes": {
@@ -212,24 +312,9 @@ function CheckoutContent() {
     } catch (err) {
         console.error(err);
         setErrorMessage(err.message);
-        setIsProcessing(false); // Stop loading if error occurred before modal open
+        setIsProcessing(false);
     }
   };
-
-
-  // --- Summary Calculations ---
-  const planLabel = isYearly ? '12-month plan' : 'Monthly plan';
-  let totalStruckVal = planStruckPrice || finalPrice;
-  FREE_ITEMS_CONFIG.forEach(item => {
-     if (item.isFixed) {
-        totalStruckVal += item.yearlyStruck;
-     } else {
-        totalStruckVal += isYearly ? item.yearlyStruck : item.monthlyStruck;
-     }
-  });
-  const formattedTotalStruck = formatCurrency(totalStruckVal);
-  const formattedPrice = formatCurrency(finalPrice);
-  const formattedPlanStruck = planStruckPrice ? formatCurrency(planStruckPrice) : null;
 
 
   return (
@@ -258,9 +343,10 @@ function CheckoutContent() {
                                 name="firstName"
                                 value={formData.firstName}
                                 onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"
+                                className={cn("w-full p-3 border rounded-md focus:ring-1 focus:ring-purple-500 outline-none transition-all", fieldErrors.firstName ? "border-red-500" : "border-gray-300")}
                                 required 
                             />
+                            {fieldErrors.firstName && <p className="text-xs text-red-500">{fieldErrors.firstName}</p>}
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-gray-700">Last name *</label>
@@ -269,9 +355,10 @@ function CheckoutContent() {
                                 name="lastName"
                                 value={formData.lastName}
                                 onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"
+                                className={cn("w-full p-3 border rounded-md focus:ring-1 focus:ring-purple-500 outline-none transition-all", fieldErrors.lastName ? "border-red-500" : "border-gray-300")}
                                 required 
                             />
+                            {fieldErrors.lastName && <p className="text-xs text-red-500">{fieldErrors.lastName}</p>}
                         </div>
                     </div>
 
@@ -305,10 +392,11 @@ function CheckoutContent() {
                                 name="phoneNumber"
                                 value={formData.phoneNumber}
                                 onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 border-l-0 rounded-r-md focus:ring-1 focus:ring-purple-500 outline-none"
-                                placeholder="00000000"
+                                className={cn("w-full p-3 border border-l-0 rounded-r-md focus:ring-1 focus:ring-purple-500 outline-none", fieldErrors.phoneNumber ? "border-red-500" : "border-gray-300")}
+                                placeholder="0000000000"
                             />
                         </div>
+                        {fieldErrors.phoneNumber && <p className="text-xs text-red-500">{fieldErrors.phoneNumber}</p>}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -319,9 +407,10 @@ function CheckoutContent() {
                                 name="address"
                                 value={formData.address}
                                 onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-1 focus:ring-purple-500 outline-none"
+                                className={cn("w-full p-3 border rounded-md focus:ring-1 focus:ring-purple-500 outline-none", fieldErrors.address ? "border-red-500" : "border-gray-300")}
                                 required
                             />
+                             {fieldErrors.address && <p className="text-xs text-red-500">{fieldErrors.address}</p>}
                         </div>
                          <div className="space-y-2">
                             <label className="text-sm font-semibold text-gray-700">City *</label>
@@ -330,9 +419,10 @@ function CheckoutContent() {
                                 name="city"
                                 value={formData.city}
                                 onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-1 focus:ring-purple-500 outline-none"
+                                className={cn("w-full p-3 border rounded-md focus:ring-1 focus:ring-purple-500 outline-none", fieldErrors.city ? "border-red-500" : "border-gray-300")}
                                 required
                             />
+                             {fieldErrors.city && <p className="text-xs text-red-500">{fieldErrors.city}</p>}
                         </div>
                     </div>
 
@@ -342,7 +432,7 @@ function CheckoutContent() {
                             <StateSelector
                                 value={formData.state}
                                 onChange={handleStateChange}
-                                error={false}
+                                error={!!fieldErrors.state}
                             />
                              {/* Hidden input for HTML5 validation if needed, though we rely on state check */}
                              <input
@@ -353,6 +443,7 @@ function CheckoutContent() {
                                 onChange={()=>{}}
                                 tabIndex={-1}
                              />
+                             {fieldErrors.state && <p className="text-xs text-red-500">{fieldErrors.state}</p>}
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-gray-700">ZIP code *</label>
@@ -361,9 +452,10 @@ function CheckoutContent() {
                                 name="zip"
                                 value={formData.zip}
                                 onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-md focus:ring-1 focus:ring-purple-500 outline-none"
+                                className={cn("w-full p-3 border rounded-md focus:ring-1 focus:ring-purple-500 outline-none", fieldErrors.zip ? "border-red-500" : "border-gray-300")}
                                 required
                             />
+                             {fieldErrors.zip && <p className="text-xs text-red-500">{fieldErrors.zip}</p>}
                         </div>
                     </div>
 
@@ -504,19 +596,27 @@ function CheckoutContent() {
                                 exit={{ opacity: 0, height: 0 }}
                                 className="overflow-hidden"
                             >
-                                <div className="flex gap-2 pt-2">
+                                <div className="flex gap-2 pt-2 items-center">
                                     <input 
                                         type="text" 
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:border-purple-500"
+                                        className={cn("w-full p-2 border rounded-md focus:outline-none focus:border-purple-500", couponStatus === 'invalid' ? "border-red-500" : "border-gray-300")}
                                         placeholder="Code"
                                         value={promoCode}
-                                        onChange={(e) => setPromoCode(e.target.value)}
+                                        onChange={(e) => {
+                                            setPromoCode(e.target.value);
+                                            setCouponStatus(null);
+                                        }}
                                     />
-                                    {/* For logic, the coupon is applied at payment time in the backend action.
-                                        We could add a 'Check' button that hits an API, but prompt didn't strictly ask for pre-check.
-                                        We will just let them enter it and it will apply on payment.
-                                    */}
+                                    <button
+                                        onClick={handleApplyCoupon}
+                                        disabled={couponStatus === 'loading' || !promoCode}
+                                        className="px-4 py-2 border border-purple-600 text-purple-600 font-semibold rounded-md hover:bg-purple-50 disabled:opacity-50"
+                                    >
+                                        {couponStatus === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
+                                    </button>
                                 </div>
+                                {couponStatus === 'valid' && <p className="text-sm text-green-600 mt-1">Coupon Applied!</p>}
+                                {couponStatus === 'invalid' && <p className="text-sm text-red-600 mt-1">Invalid Coupon Code</p>}
                             </motion.div>
                         )}
                     </AnimatePresence>
