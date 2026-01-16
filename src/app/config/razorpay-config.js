@@ -2,9 +2,27 @@
 // Coupon Configuration
 export const COUPON_CONFIG = {
     'FOUNDER': {
-        active: true, // Master switch to enable/disable
-        expiresAt: '2030-12-31T23:59:59Z', // Optional: Set expiry date
-        limit: 1000 // Optional: Could implement DB check against this
+        active: true,
+        expiresAt: '2030-12-31T23:59:59Z',
+        limit: 50, // Updated limit to 50
+        description: 'Founder Plan (1 Year Access)',
+        type: 'plan_swap'
+    },
+    'FREETRIAL': { // 1 Month Free Trial
+        active: true,
+        description: '1 Month Free Trial',
+        type: 'trial_period',
+        trialDays: 30
+    },
+    'SAVE70': { // 70% Off First Month
+        active: true,
+        description: '70% Off First Month',
+        type: 'offer_apply',
+        // Offer IDs mapped by Mode
+        offerIds: {
+            test: 'offer_S4Bsf2tMH8hFsz',
+            live: 'offer_S4CUbc3yLhHMuJ'
+        }
     }
 };
 

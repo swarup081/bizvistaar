@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import FaqSection from '@/components/checkout/FaqSection';
 import StateSelector from '@/components/checkout/StateSelector';
 import { AnimatePresence, motion } from 'framer-motion';
-import { createSubscriptionAction } from '@/app/actions/razorpayActions';
+import { createSubscriptionAction, verifyPaymentAction } from '@/app/actions/razorpayActions';
 import { getStandardPlanId } from '@/app/config/razorpay-config';
 import { validateCouponAction } from '@/app/actions/razorpayActions';
 import { supabase } from '@/lib/supabaseClient';
@@ -98,19 +98,6 @@ function CheckoutContent() {
     });
   };
 
-  // --- Summary Calculations ---
-  let totalStruckVal = planStruckPrice || finalPrice;
-  FREE_ITEMS_CONFIG.forEach(item => {
-     if (item.isFixed) {
-        totalStruckVal += item.yearlyStruck;
-     } else {
-        totalStruckVal += isYearly ? item.yearlyStruck : item.monthlyStruck;
-     }
-  });
-  const formattedTotalStruck = formatCurrency(totalStruckVal);
-  const formattedPrice = formatCurrency(finalPrice);
-  const formattedPlanStruck = planStruckPrice ? formatCurrency(planStruckPrice) : null;
-
   // --- Form State ---
   const [formData, setFormData] = useState({
     firstName: '',
@@ -130,12 +117,25 @@ function CheckoutContent() {
   const [showPromo, setShowPromo] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [couponStatus, setCouponStatus] = useState(null); // 'valid', 'invalid', 'loading'
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // stores { code, description, type }
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // --- Summary Calculations ---
+  let totalStruckVal = planStruckPrice || finalPrice;
+  FREE_ITEMS_CONFIG.forEach(item => {
+     if (item.isFixed) {
+        totalStruckVal += item.yearlyStruck;
+     } else {
+        totalStruckVal += isYearly ? item.yearlyStruck : item.monthlyStruck;
+     }
+  });
+  const formattedTotalStruck = formatCurrency(totalStruckVal);
+  const formattedPrice = formatCurrency(finalPrice);
+  const formattedPlanStruck = planStruckPrice ? formatCurrency(planStruckPrice) : null;
 
   // --- Auth Check ---
   useEffect(() => {
@@ -257,7 +257,11 @@ function CheckoutContent() {
           const res = await validateCouponAction(promoCode);
           if (res.valid) {
               setCouponStatus('valid');
-              setAppliedCoupon(promoCode);
+              setAppliedCoupon({
+                  code: promoCode,
+                  description: res.description,
+                  type: res.type
+              });
           } else {
               setCouponStatus('invalid');
               setAppliedCoupon(null);
@@ -323,7 +327,7 @@ function CheckoutContent() {
         }
 
         // 3. Create Subscription (Pass Token for Auth)
-        const codeToSend = appliedCoupon || (couponStatus === 'valid' ? promoCode : '');
+        const codeToSend = appliedCoupon ? appliedCoupon.code : (couponStatus === 'valid' ? promoCode : '');
 
         // Pass accessToken to Server Action to verify user
         const subRes = await createSubscriptionAction(planName, billingCycle, codeToSend, accessToken);
@@ -343,8 +347,25 @@ function CheckoutContent() {
             "name": "BizVistar",
             "description": `${planName} Plan - ${billingCycle}`,
             "image": "https://bizvistar.com/logo.png",
-            "handler": function (response) {
-                router.push('/dashboard?payment_success=true');
+            "handler": async function (response) {
+                // Verify payment server-side before redirecting
+                try {
+                     const verification = await verifyPaymentAction(
+                         response.razorpay_payment_id,
+                         response.razorpay_subscription_id,
+                         response.razorpay_signature
+                     );
+
+                     if (verification.success) {
+                        router.push('/dashboard');
+                     } else {
+                        setErrorMessage("Payment verification failed. Please contact support.");
+                        setIsProcessing(false);
+                     }
+                } catch (verifyErr) {
+                    setErrorMessage("Payment verification failed. Please contact support.");
+                    setIsProcessing(false);
+                }
             },
             "prefill": {
                 "name": billingPayload.fullName,
@@ -610,6 +631,16 @@ function CheckoutContent() {
                             <span className="text-base font-bold text-gray-900">{formattedPrice}</span>
                          </div>
                     </div>
+
+                    {/* Discount Line Item */}
+                    {appliedCoupon && appliedCoupon.description && (
+                         <div className="flex justify-between items-baseline text-purple-700 font-medium">
+                            <span className="text-base">Coupon: {appliedCoupon.code}</span>
+                            <div className="text-right">
+                                <span className="text-sm">{appliedCoupon.description}</span>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Free Items Loop */}
                     {FREE_ITEMS_CONFIG.map((item, i) => {
