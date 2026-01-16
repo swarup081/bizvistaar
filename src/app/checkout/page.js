@@ -101,7 +101,7 @@ function CheckoutContent() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: '', // Added Email
+    email: '',
     country: 'India',
     phoneCode: '+91',
     phoneNumber: '',
@@ -116,10 +116,10 @@ function CheckoutContent() {
   const [addCompanyDetails, setAddCompanyDetails] = useState(false);
 
   // Coupon State
-  const [showPromo, setShowPromo] = useState(false); // Default closed
+  const [showPromo, setShowPromo] = useState(false);
   const [promoCode, setPromoCode] = useState('');
-  const [couponStatus, setCouponStatus] = useState(null); // 'valid', 'invalid', 'loading'
-  const [appliedCoupon, setAppliedCoupon] = useState(null); // stores { code, description, type, percentOff, maxDiscount }
+  const [couponStatus, setCouponStatus] = useState(null);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -140,8 +140,6 @@ function CheckoutContent() {
       }
   }
 
-  const finalPrice = Math.max(0, basePrice - discountAmount);
-
   // Calculate Struck values for free items
   let totalFreeItemsVal = 0;
   FREE_ITEMS_CONFIG.forEach(item => {
@@ -152,64 +150,62 @@ function CheckoutContent() {
      }
   });
 
-  // Requirement: "Total cutoff should be the total of all base" -> Plan Base (Struck) + Free Items
-  // Note: If yearly, plan base struck is monthly * 12.
-  const planBaseStruck = isYearly ? (planBase.monthly * 12) : planBase.monthly;
-  // Wait, planBase IS the full price (monthly or yearly total).
-  // If yearly, planBase = monthly * 12.
-  // So 'planBase' is correct for the plan component of the total.
-
-  // Actually, for yearly, user usually sees `12 * Monthly` struck through if there is a discount on the plan itself.
-  // But here, the requirement says "Plan Price + All Free Items Prices".
-  // So we sum them up.
-  const totalStruckVal = planBase + totalFreeItemsVal;
+  // FIX: Use 'basePrice' (Number) instead of 'planBase' (Object) for total calculation
+  const totalStruckVal = basePrice + totalFreeItemsVal;
 
   const formattedTotalStruck = formatCurrency(totalStruckVal);
-  const formattedPrice = formatCurrency(finalPrice);
+
+  let finalPrice = Math.max(0, basePrice - discountAmount);
   const formattedBasePrice = formatCurrency(basePrice);
-  const formattedDiscount = formatCurrency(discountAmount);
 
   // Dynamic Plan Row Price Display
   let planDisplayStruck = isYearly ? (planBase.monthly * 12) : null;
   let planDisplayMain = basePrice;
   let isFounder = appliedCoupon?.code === 'FOUNDER';
+  let isFreeTrial = appliedCoupon?.code === 'FREETRIAL';
 
   if (discountAmount > 0) {
       planDisplayStruck = basePrice;
       planDisplayMain = finalPrice;
   }
 
-  // Founder Plan Specific Logic
-  // Display: <s>Standard Price</s> Founder Price
-  // Note: Founder price is implicit in the final calculation if 'discountAmount' reflects it?
-  // No, Founder is a plan swap. `createSubscription` handles the swap.
-  // But visually, we need to show the price change.
-  // We don't have the explicit Founder Price in frontend config easily unless we hardcode or calculate it.
-  // Assuming Founder is ~50% off or fixed price.
-  // If `FOUNDER` coupon is applied, `validateCoupon` returns valid, but `percentOff` might be undefined if it's a Swap type.
-  // In `COUPON_CONFIG`, Founder is `plan_swap`. It doesn't have `percentOff`.
-  // We need to know the Founder Price to display it.
-  // Workaround: We can't calculate 'finalPrice' accurately for Plan Swap here without knowing the target plan price.
-  // For now, if Founder, we might show a generic "Founder Price" or rely on backend returned values?
-  // User said "Founding Member offer is ₹399/mo". Standard is ₹799/mo.
-  // If Plan is Pro (799) -> Founder (399).
-  // I will hardcode a visual override for Founder for now since I can't fetch plan details dynamically from RZP API here.
-
-  if (isFounder) {
-      // Assuming Founder is roughly 50% off based on "799 -> 399" example.
-      // Let's approximate or just show "Special Price".
-      // Or better, let's just apply a visual 50% discount for display purposes if exact math is tricky?
-      // No, user wants accuracy.
-      // Let's assume Founder = 399/mo (Pro) logic for all?
-      // Wait, there are Founder mappings for Starter/Growth too.
-      // I will assume for display, it shows the "discounted" price as 50% of base.
-      const founderPrice = basePrice / 2; // Approximation based on 799->399
+  // FIX: Explicitly handle Free Trial -> 0
+  if (isFreeTrial) {
       planDisplayStruck = basePrice;
-      planDisplayMain = founderPrice;
+      planDisplayMain = 0;
+      finalPrice = 0;
+  }
+
+  // FIX: Explicitly handle Founder Prices
+  if (isFounder) {
+      let founderPriceVal = basePrice;
+      // Map Plans: Starter(299)->149, Pro(799)->399, Growth(1499)->749
+      if (planName === 'Starter') founderPriceVal = 149;
+      else if (planName === 'Pro') founderPriceVal = 399;
+      else if (planName === 'Growth') founderPriceVal = 749;
+
+      // If Yearly, just multiply by 12? Or assume fixed?
+      // "Founder plan is 1 year access".
+      // Usually Founder price given (399) is per month equivalent billing or lump sum?
+      // The prompt said "399 instead of 799" which are monthly rates.
+      // If billing is yearly, base is 799*12=9588. Founder would be 399*12=4788.
+      if (isYearly) {
+          founderPriceVal = founderPriceVal * 12;
+      }
+
+      planDisplayStruck = basePrice;
+      planDisplayMain = founderPriceVal;
+      // Note: finalPrice for subtotal row should also reflect this logic if we want consistency,
+      // but 'finalPrice' is calculated from discount.
+      // Founder is a Plan Swap, not a % discount in the standard flow,
+      // so we override finalPrice for display.
+      finalPrice = founderPriceVal;
   }
 
   const formattedPlanDisplayStruck = planDisplayStruck ? formatCurrency(planDisplayStruck) : null;
   const formattedPlanDisplayMain = formatCurrency(planDisplayMain);
+  const formattedPrice = formatCurrency(finalPrice);
+  const formattedDiscount = formatCurrency(discountAmount);
 
 
   // --- Auth Check ---
@@ -218,16 +214,17 @@ function CheckoutContent() {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
-                 // Redirect logic (commented out for verification if needed, but enabled for prod)
+                // Redirect to sign in, preserving current checkout state via redirect param
                 const currentPath = window.location.pathname + window.location.search;
                 router.push(`/sign-in?redirect=${encodeURIComponent(currentPath)}`);
             } else {
+                // User is authenticated, fetch pre-fill data
                 setIsCheckingAuth(false);
                 fetchProfileData(user.id, user.email);
             }
         } catch (error) {
             console.error("Auth check failed", error);
-            // Safe fallback
+             // Safe fallback: redirect
             const currentPath = window.location.pathname + window.location.search;
             router.push(`/sign-in?redirect=${encodeURIComponent(currentPath)}`);
         }
@@ -287,6 +284,7 @@ function CheckoutContent() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear field error on change
     if (fieldErrors[name]) {
         setFieldErrors(prev => ({ ...prev, [name]: null }));
     }
@@ -341,7 +339,7 @@ function CheckoutContent() {
                   percentOff: res.percentOff,
                   maxDiscount: res.maxDiscount
               });
-              setPromoCode('');
+              setPromoCode(''); // clear input on success
           } else {
               setCouponStatus('invalid');
               // Optionally show error message from backend
@@ -349,6 +347,7 @@ function CheckoutContent() {
           }
       } catch (err) {
           setCouponStatus('invalid');
+          // setAppliedCoupon(null);
       }
   };
 
@@ -364,7 +363,7 @@ function CheckoutContent() {
     e.preventDefault();
     setErrorMessage('');
 
-    // 1. Validate Form
+    // 1. Validate Form Client-side
     if (!validateForm()) {
         setErrorMessage("Please fix the highlighted errors before continuing.");
         return;
@@ -379,6 +378,7 @@ function CheckoutContent() {
     }
 
     try {
+        // --- AUTH: Get Access Token ---
         const { data: { session } } = await supabase.auth.getSession();
         if (!session || !session.user) {
              router.push('/sign-in');
@@ -386,7 +386,7 @@ function CheckoutContent() {
         }
         const accessToken = session.access_token;
 
-        // 2. Save Billing Details (including Email)
+        // 2. Save Billing Details (DIRECTLY via Client Supabase for RLS)
         const billingPayload = {
             fullName: `${formData.firstName} ${formData.lastName}`.trim(),
             email: formData.email, // Added Email
@@ -414,8 +414,10 @@ function CheckoutContent() {
              throw new Error("Failed to save billing details. Please try again.");
         }
 
-        // 3. Create Subscription
+        // 3. Create Subscription (Pass Token for Auth)
         const codeToSend = appliedCoupon ? appliedCoupon.code : '';
+
+        // Pass accessToken to Server Action to verify user
         const subRes = await createSubscriptionAction(planName, billingCycle, codeToSend, accessToken);
 
         if (!subRes.success) {
@@ -434,6 +436,7 @@ function CheckoutContent() {
             "description": `${planName} Plan - ${billingCycle}`,
             "image": "https://bizvistar.com/logo.png",
             "handler": async function (response) {
+                // Verify payment server-side before redirecting
                 try {
                      const verification = await verifyPaymentAction(
                          response.razorpay_payment_id,
@@ -621,6 +624,7 @@ function CheckoutContent() {
                                 onChange={handleStateChange}
                                 error={!!fieldErrors.state}
                             />
+                             {/* Hidden input for HTML5 validation if needed, though we rely on state check */}
                              <input
                                 type="text"
                                 value={formData.state}
