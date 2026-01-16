@@ -12,32 +12,56 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Helper to get authenticated user
-async function getUser() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet) {
-           try {
-             cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-           } catch { /* pass */ }
-        },
-      },
-    }
-  );
+// Helper to get authenticated user - MODIFIED to accept optional token
+async function getUser(accessToken = null) {
+  // If token provided (from client-side session), use it
+  if (accessToken) {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        {
+            global: {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
+                }
+            }
+        }
+      );
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) return null;
+      return user;
+  }
 
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return null;
-  return user;
+  // Fallback to cookies (if available)
+  try {
+      const cookieStore = await cookies();
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        {
+          cookies: {
+            getAll() { return cookieStore.getAll() },
+            setAll(cookiesToSet) {
+               try {
+                 cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+               } catch { /* pass */ }
+            },
+          },
+        }
+      );
+
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) return null;
+      return user;
+  } catch (e) {
+      // Cookies might fail if called outside of request context (rare in Actions)
+      return null;
+  }
 }
 
-export async function saveBillingDetailsAction(billingData) {
+export async function saveBillingDetailsAction(billingData, accessToken = null) {
   try {
-    const user = await getUser();
+    const user = await getUser(accessToken);
     if (!user) throw new Error("Unauthorized");
 
     // Basic validation
@@ -87,10 +111,11 @@ export async function validateCouponAction(couponCode) {
  * @param {string} planName - "Starter", "Pro", "Growth"
  * @param {string} billingCycle - "monthly", "yearly"
  * @param {string} couponCode - optional
+ * @param {string} accessToken - optional (for client-side auth bridging)
  */
-export async function createSubscriptionAction(planName, billingCycle, couponCode) {
+export async function createSubscriptionAction(planName, billingCycle, couponCode, accessToken = null) {
   try {
-    const user = await getUser();
+    const user = await getUser(accessToken);
     if (!user) throw new Error("Unauthorized");
 
     // 1. Resolve Standard Plan ID from Name/Cycle (SECURITY: user cannot inject random ID)
@@ -111,9 +136,6 @@ export async function createSubscriptionAction(planName, billingCycle, couponCod
     // 3. Initialize Razorpay
     let razorpayInstance;
 
-    // Handle specific env vars based on user prompt instructions
-    // "RAZOPAY_Test_Key_Secret" and "RAZOPAY_Test_Key_ID" are the exact names provided.
-
     if (mode === 'live') {
          razorpayInstance = new Razorpay({
             key_id: process.env.NEXT_PUBLIC_RAZORPAY_LIVE_KEY_ID,
@@ -122,7 +144,7 @@ export async function createSubscriptionAction(planName, billingCycle, couponCod
     } else {
          razorpayInstance = new Razorpay({
             key_id: process.env.RAZOPAY_Test_Key_ID || process.env.NEXT_PUBLIC_RAZORPAY_TEST_KEY_ID,
-            key_secret: process.env.RAZORPAY_Test_Key_Secret || process.env.RAZORPAY_TEST_KEY_SECRET,
+            key_secret: process.env.RAZOPAY_Test_Key_Secret || process.env.RAZORPAY_TEST_KEY_SECRET,
         });
     }
 

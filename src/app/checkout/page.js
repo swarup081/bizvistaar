@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import FaqSection from '@/components/checkout/FaqSection';
 import StateSelector from '@/components/checkout/StateSelector';
 import { AnimatePresence, motion } from 'framer-motion';
-import { saveBillingDetailsAction, createSubscriptionAction } from '@/app/actions/razorpayActions';
+import { createSubscriptionAction } from '@/app/actions/razorpayActions';
 import { getStandardPlanId } from '@/app/config/razorpay-config';
 import { validateCouponAction } from '@/app/actions/razorpayActions';
 import { supabase } from '@/lib/supabaseClient';
@@ -147,7 +147,9 @@ function CheckoutContent() {
                 const currentPath = window.location.pathname + window.location.search;
                 router.push(`/sign-in?redirect=${encodeURIComponent(currentPath)}`);
             } else {
+                // User is authenticated, fetch pre-fill data
                 setIsCheckingAuth(false);
+                fetchProfileData(user.id);
             }
         } catch (error) {
             console.error("Auth check failed", error);
@@ -156,6 +158,38 @@ function CheckoutContent() {
             router.push(`/sign-in?redirect=${encodeURIComponent(currentPath)}`);
         }
     };
+
+    const fetchProfileData = async (userId) => {
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('full_name, billing_address')
+                .eq('id', userId)
+                .single();
+
+            if (data && data.billing_address) {
+                const billing = data.billing_address;
+                const [firstName, ...lastNameParts] = (data.full_name || billing.fullName || '').split(' ');
+
+                setFormData(prev => ({
+                    ...prev,
+                    firstName: firstName || prev.firstName,
+                    lastName: lastNameParts.join(' ') || prev.lastName,
+                    address: billing.address || prev.address,
+                    city: billing.city || prev.city,
+                    state: billing.state || prev.state,
+                    zip: billing.zipCode || prev.zip,
+                    phoneNumber: billing.phoneNumber || prev.phoneNumber,
+                    companyName: billing.companyName || prev.companyName,
+                    gstNumber: billing.gstNumber || prev.gstNumber
+                }));
+                if (billing.companyName) setAddCompanyDetails(true);
+            }
+        } catch (err) {
+            console.error("Failed to fetch profile data", err);
+        }
+    };
+
     checkUser();
   }, [router]);
 
@@ -254,7 +288,15 @@ function CheckoutContent() {
     }
 
     try {
-        // 2. Save Billing Details
+        // --- AUTH: Get Access Token ---
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session || !session.user) {
+             router.push('/sign-in');
+             throw new Error("Session expired. Please sign in again.");
+        }
+        const accessToken = session.access_token;
+
+        // 2. Save Billing Details (DIRECTLY via Client Supabase for RLS)
         const billingPayload = {
             fullName: `${formData.firstName} ${formData.lastName}`.trim(),
             address: formData.address,
@@ -267,20 +309,30 @@ function CheckoutContent() {
             gstNumber: addCompanyDetails ? formData.gstNumber : null
         };
 
-        const saveRes = await saveBillingDetailsAction(billingPayload);
-        if (!saveRes.success) {
-             if (saveRes.error && saveRes.error.includes("Unauthorized")) {
+        // Use client-side update to leverage existing session and RLS
+        const { error: saveError } = await supabase
+            .from('profiles')
+            .update({
+                billing_address: billingPayload,
+                full_name: billingPayload.fullName
+            })
+            .eq('id', session.user.id);
+
+        if (saveError) {
+             throw new Error("Failed to save billing details. Please try again.");
+        }
+
+        // 3. Create Subscription (Pass Token for Auth)
+        const codeToSend = appliedCoupon || (couponStatus === 'valid' ? promoCode : '');
+
+        // Pass accessToken to Server Action to verify user
+        const subRes = await createSubscriptionAction(planName, billingCycle, codeToSend, accessToken);
+
+        if (!subRes.success) {
+            if (subRes.error && subRes.error.includes("Unauthorized")) {
                  router.push('/sign-in');
                  throw new Error("Session expired. Please sign in again.");
              }
-            throw new Error(saveRes.error || "Failed to save billing details.");
-        }
-
-        // 3. Create Subscription
-        const codeToSend = appliedCoupon || (couponStatus === 'valid' ? promoCode : '');
-
-        const subRes = await createSubscriptionAction(planName, billingCycle, codeToSend);
-        if (!subRes.success) {
             throw new Error(subRes.error || "Failed to initiate subscription.");
         }
 
@@ -296,7 +348,7 @@ function CheckoutContent() {
             },
             "prefill": {
                 "name": billingPayload.fullName,
-                "email": "",
+                "email": session.user.email, // Use email from session
                 "contact": formData.phoneNumber
             },
             "notes": {
