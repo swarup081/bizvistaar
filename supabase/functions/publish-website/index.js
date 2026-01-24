@@ -36,6 +36,8 @@ serve(async (req) => {
     .from('subscriptions')
     .select('status, current_period_end')
     .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (!subscription) {
@@ -49,7 +51,7 @@ serve(async (req) => {
   const now = new Date();
   const periodEnd = new Date(current_period_end);
 
-  if (status === 'canceled' || status === 'past_due' || status === 'halted') {
+  if (status === 'canceled' || status === 'past_due' || status === 'halted' || status === 'paused') {
        return new Response(JSON.stringify({ error: 'Your subscription is inactive. Cannot publish.' }), {
          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
          status: 403,

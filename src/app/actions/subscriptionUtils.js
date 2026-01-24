@@ -15,6 +15,7 @@ export async function validateUserSubscription(userId) {
   if (!userId) throw new Error("User ID required for subscription check.");
 
   // Fetch subscription with Plan details
+  // Fix: Order by created_at desc to get the LATEST subscription if multiple exist (e.g. old canceled ones)
   const { data: subscription, error } = await supabaseAdmin
     .from('subscriptions')
     .select(`
@@ -23,6 +24,8 @@ export async function validateUserSubscription(userId) {
       plan:plans ( razorpay_plan_id, name )
     `)
     .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) {
@@ -46,7 +49,7 @@ export async function validateUserSubscription(userId) {
   // Note: periodEnd from Razorpay is usually the exact second of expiry.
 
   // 1. CANCELED / PAST DUE -> Immediate Block
-  if (status === 'canceled' || status === 'past_due' || status === 'halted') {
+  if (status === 'canceled' || status === 'past_due' || status === 'halted' || status === 'paused') {
       throw new Error("Your subscription is inactive or canceled. Access denied.");
   }
 

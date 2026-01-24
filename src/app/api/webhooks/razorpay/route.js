@@ -61,6 +61,7 @@ export async function POST(req) {
       let newStatus = 'active';
       if (eventName === 'subscription.cancelled') newStatus = 'canceled';
       if (eventName === 'subscription.halted') newStatus = 'past_due';
+      if (eventName === 'subscription.paused') newStatus = 'paused'; // Handle Paused
       if (eventName === 'subscription.completed') newStatus = 'completed'; // FIX: Keep as 'completed' to allow grace period check
 
       // 'charged' and 'activated' imply active.
