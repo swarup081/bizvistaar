@@ -51,13 +51,17 @@ serve(async (req) => {
   const now = new Date();
   const periodEnd = new Date(current_period_end);
 
-  if (status === 'canceled' || status === 'past_due' || status === 'halted' || status === 'paused') {
+  // Status Check (paused/halted are mapped to past_due in DB)
+  if (status === 'canceled' || status === 'past_due') {
        return new Response(JSON.stringify({ error: 'Your subscription is inactive. Cannot publish.' }), {
          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
          status: 403,
        });
   }
-  if (status === 'completed' && now > periodEnd) {
+
+  // Date Check (active/trialing/completed->active)
+  // If active but expired, block.
+  if (now > periodEnd) {
        return new Response(JSON.stringify({ error: 'Your subscription period has ended. Please renew to publish.' }), {
          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
          status: 403,

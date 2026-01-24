@@ -41,7 +41,9 @@ export async function POST(req) {
         'subscription.charged', 
         'subscription.cancelled', 
         'subscription.completed', 
-        'subscription.halted'
+        'subscription.halted',
+        'subscription.paused',
+        'subscription.resumed'
     ].includes(eventName)) {
         
       const subscription = payload.subscription.entity;
@@ -61,8 +63,16 @@ export async function POST(req) {
       let newStatus = 'active';
       if (eventName === 'subscription.cancelled') newStatus = 'canceled';
       if (eventName === 'subscription.halted') newStatus = 'past_due';
-      if (eventName === 'subscription.paused') newStatus = 'paused'; // Handle Paused
-      if (eventName === 'subscription.completed') newStatus = 'completed'; // FIX: Keep as 'completed' to allow grace period check
+
+      // FIX: DB Constraint only allows 'active', 'canceled', 'past_due'
+      // Map 'paused' -> 'past_due' (blocks access)
+      if (eventName === 'subscription.paused') newStatus = 'past_due';
+
+      if (eventName === 'subscription.resumed') newStatus = 'active';
+
+      // FIX: Map 'completed' -> 'active' so it saves to DB.
+      // We rely on current_period_end date check in validation logic to handle actual expiry.
+      if (eventName === 'subscription.completed') newStatus = 'active';
 
       // 'charged' and 'activated' imply active.
       // Map Status text to DB constraints: 'active', 'canceled', 'past_due', 'completed'

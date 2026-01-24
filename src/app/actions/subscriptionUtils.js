@@ -49,17 +49,18 @@ export async function validateUserSubscription(userId) {
   // Note: periodEnd from Razorpay is usually the exact second of expiry.
 
   // 1. CANCELED / PAST DUE -> Immediate Block
-  if (status === 'canceled' || status === 'past_due' || status === 'halted' || status === 'paused') {
+  // Note: 'paused' and 'halted' are mapped to 'past_due' in webhook to satisfy DB constraints.
+  if (status === 'canceled' || status === 'past_due') {
       throw new Error("Your subscription is inactive or canceled. Access denied.");
   }
 
-  // 2. ACTIVE / COMPLETED / TRIALLING
-  // Since we map 'completed' -> 'active' in DB due to constraints, we treat 'active' as potentially expiring.
-  if (status === 'active' || status === 'completed' || status === 'trialing') {
+  // 2. ACTIVE / TRIALLING
+  // 'completed' is mapped to 'active' in webhook.
+  if (status === 'active' || status === 'trialing') {
       if (now > periodEnd) {
           // If it's active but date passed, and we haven't received renewal webhook,
           // technically they are expired or past_due.
-          // For Founder plan (completed), this is the correct termination point.
+          // For Founder plan (completed -> active), this is the correct termination point.
           throw new Error("Your subscription period has ended. Please renew.");
       }
   } else {
