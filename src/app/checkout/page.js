@@ -6,6 +6,7 @@ import { Loader2, Check, X, Tag, ChevronDown, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FaqSection from '@/components/checkout/FaqSection';
 import StateSelector from '@/components/checkout/StateSelector';
+import ErrorDialog from '@/components/checkout/ErrorDialog';
 import { AnimatePresence, motion } from 'framer-motion';
 import { createSubscriptionAction, verifyPaymentAction } from '@/app/actions/razorpayActions';
 import { getStandardPlanId } from '@/app/config/razorpay-config';
@@ -125,6 +126,10 @@ function CheckoutContent() {
   const [errorMessage, setErrorMessage] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Dialog State
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState({ title: '', message: '', actionLabel: '', onAction: null });
 
   // --- Summary Calculations ---
   
@@ -421,11 +426,26 @@ function CheckoutContent() {
         const subRes = await createSubscriptionAction(planName, billingCycle, codeToSend, accessToken);
         
         if (!subRes.success) {
-            if (subRes.error && subRes.error.includes("Unauthorized")) {
+            const err = subRes.error || "Failed to initiate subscription.";
+            if (err.includes("Unauthorized")) {
                  router.push('/sign-in');
                  throw new Error("Session expired. Please sign in again.");
              }
-            throw new Error(subRes.error || "Failed to initiate subscription.");
+
+             // Check for "Already has plan" or specific errors to show Dialog
+             if (err.includes("already have an active plan") || err.includes("upgrade")) {
+                 setDialogConfig({
+                     title: "Subscription Active",
+                     message: "You already have an active subscription. Do you want to view your current plan in the dashboard?",
+                     actionLabel: "Go to Dashboard",
+                     onAction: () => router.push('/dashboard')
+                 });
+                 setShowErrorDialog(true);
+                 setIsProcessing(false);
+                 return; // Stop flow
+             }
+
+            throw new Error(err);
         }
 
         // 4. Open Razorpay
@@ -867,6 +887,16 @@ function CheckoutContent() {
       <div className="mt-20 border-t border-gray-200 pt-16">
          <FaqSection />
       </div>
+
+      {/* Error Dialog */}
+      <ErrorDialog
+        isOpen={showErrorDialog}
+        onClose={() => setShowErrorDialog(false)}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        primaryActionLabel={dialogConfig.actionLabel}
+        onPrimaryAction={dialogConfig.onAction}
+      />
 
     </div>
   );
