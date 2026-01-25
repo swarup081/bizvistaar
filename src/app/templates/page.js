@@ -6,6 +6,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient'; 
 import { Globe, User, ChevronDown, Search, X } from 'lucide-react'; 
 import { cn } from '@/lib/utils'; // Assuming cn is available
+import Logo from '@/lib/logo/logoOfBizVistar';
+
 
 // --- Primary Header Component (Non-Fixed, Scrolls) ---
 const PrimaryHeader = ({ session, onLoginClick }) => {
@@ -31,8 +33,8 @@ const PrimaryHeader = ({ session, onLoginClick }) => {
         
         {/* Left: Logo/Title */}
         <Link href="/" className="flex items-center space-x-2">
-            <span className="text-3xl font-bold text-gray-900 not-italic tracking-tight">
-                BizVistar
+           <span className="text-3xl font-bold text-gray-900 not-italic tracking-tight">
+                <Logo/>
             </span>
         </Link>
         

@@ -453,7 +453,7 @@ const PlanCard = ({ plan, isYearly, className }) => (
           className={cn(
             'w-full py-4 rounded-full text-xl font-bold transition-all duration-200 transform hover:-translate-y-1',
             plan.isRecommended
-              ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-md hover:shadow-lg'
+              ? 'bg-purple-600 text-white hover:bg-[purple-700] shadow-md hover:shadow-lg'
               : 'bg-gray-900 text-white hover:bg-gray-800'
           )}
         >
