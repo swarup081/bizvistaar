@@ -42,8 +42,13 @@ export async function middleware(request) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {
-    return NextResponse.redirect(new URL('/sign-in', request.url))
+  const path = request.nextUrl.pathname;
+
+  if ((path.startsWith('/dashboard') || path.startsWith('/editor')) && !user) {
+    const signInUrl = new URL('/sign-in', request.url);
+    // Append the current path as a 'redirect' param so the user can return
+    signInUrl.searchParams.set('redirect', path);
+    return NextResponse.redirect(signInUrl)
   }
 
   return response
@@ -52,5 +57,6 @@ export async function middleware(request) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
+    '/editor/:path*',
   ],
 }

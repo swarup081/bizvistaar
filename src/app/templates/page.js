@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; 
+import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient'; 
 import { Globe, User, ChevronDown, Search, X } from 'lucide-react'; 
 import { cn } from '@/lib/utils'; // Assuming cn is available
@@ -388,6 +388,7 @@ const businessVibes = [
 // --- Reusable Template Card Component with Hover Logic ---
 const TemplateCard = ({ title, description, url, previewUrl, editor, keywords, isRecommended }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const [isCreating, setIsCreating] = useState(false);
   const [selectedKeyword, setSelectedKeyword] = useState(null);
 
@@ -396,7 +397,7 @@ const TemplateCard = ({ title, description, url, previewUrl, editor, keywords, i
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      router.push('/sign-in');
+      router.push(`/sign-in?redirect=${encodeURIComponent(pathname)}`);
       return;
     }
 
@@ -560,6 +561,7 @@ export default function TemplatesPage() {
   const [selectedVibes, setSelectedVibes] = useState({});
   const [filter, setFilter] = useState(''); // State for the search/filter input
   const router = useRouter();
+  const pathname = usePathname();
 
   // Load state and session
   useEffect(() => {
@@ -599,8 +601,8 @@ export default function TemplatesPage() {
   }, []);
 
   const handleLoginClick = useCallback(() => {
-    router.push('/sign-in');
-  }, [router]);
+    router.push(`/sign-in?redirect=${encodeURIComponent(pathname)}`);
+  }, [router, pathname]);
   
   // Logic to determine if a filter is active
   const activeFilter = filter.trim();

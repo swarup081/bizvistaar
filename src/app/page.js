@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as Dialog from '@radix-ui/react-dialog';
 import { 
@@ -803,6 +804,7 @@ const FaqSection = () => {
 
 // --- Footer & Terms Modal ---
 const Footer = () => {
+    const pathname = usePathname();
     return (
         <footer className="bg-gray-50 border-t border-gray-200 pt-16 pb-12 mt-32">
             <div className="container mx-auto px-6 max-w-7xl">
@@ -828,15 +830,15 @@ const Footer = () => {
                             <li><Link href="#" className="hover:text-purple-600">Features</Link></li>
                             <li><Link href="#pricing" className="hover:text-purple-600">Pricing</Link></li>
                             <li><Link href="/templates" className="hover:text-purple-600">Templates</Link></li>
-                            <li><Link href="/sign-in" className="hover:text-purple-600">Sign in</Link></li>
+                            <li><Link href={`/sign-in?redirect=${encodeURIComponent(pathname)}`} className="hover:text-purple-600">Sign in</Link></li>
                         </ul>
                     </div>
                      <div>
                         <h4 className="font-bold text-gray-900 mb-4">Company</h4>
                         <ul className="space-y-2 text-sm text-gray-600">
                             <li><Link href="#" className="hover:text-purple-600">About Us</Link></li>
-                            <li><Link href="/sign-in" className="hover:text-purple-600">Careers</Link></li>
-                            <li><Link href="/sign-in" className="hover:text-purple-600">Contact</Link></li>
+                            <li><Link href={`/sign-in?redirect=${encodeURIComponent(pathname)}`} className="hover:text-purple-600">Careers</Link></li>
+                            <li><Link href={`/sign-in?redirect=${encodeURIComponent(pathname)}`} className="hover:text-purple-600">Contact</Link></li>
                         </ul>
                     </div>
                      <div>
