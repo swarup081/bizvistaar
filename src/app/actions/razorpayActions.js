@@ -15,9 +15,8 @@ const getSupabaseAdmin = () => {
     );
 };
 
-// Helper to get authenticated user
+// ... (Existing getUser helper) ...
 async function getUser(accessToken = null) {
-  // If token provided (from client-side session), use it
   if (accessToken) {
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
@@ -35,7 +34,6 @@ async function getUser(accessToken = null) {
       return user;
   }
 
-  // Fallback to cookies
   try {
       const cookieStore = await cookies();
       const supabase = createServerClient(
@@ -61,6 +59,7 @@ async function getUser(accessToken = null) {
   }
 }
 
+// ... (Existing helper functions) ...
 // Check if user has already used a specific coupon
 async function hasUserUsedCoupon(userId, couponCode) {
     const supabaseAdmin = getSupabaseAdmin();
@@ -234,7 +233,7 @@ export async function createSubscriptionAction(planName, billingCycle, couponCod
     if (!user) throw new Error("Unauthorized");
     
     const standardPlanId = getStandardPlanId(planName, billingCycle);
-    if (!standardPlanId) throw new Error("Plan not found in configuration.");
+    if (!standardPlanId) throw new Error("Configuration Error: Plan ID not found. Please check razorpay-config.js.");
 
     const normalizedCoupon = couponCode ? couponCode.trim().toUpperCase() : '';
     const finalPlanId = getPlanId(standardPlanId, couponCode); 
@@ -363,7 +362,21 @@ export async function createSubscriptionAction(planName, billingCycle, couponCod
         subscriptionOptions.start_at = startAt;
     }
 
-    const subscription = await razorpayInstance.subscriptions.create(subscriptionOptions);
+    // Wrap Razorpay call in try/catch to handle 500s or bad Plan IDs explicitly
+    let subscription;
+    try {
+        subscription = await razorpayInstance.subscriptions.create(subscriptionOptions);
+    } catch (rpError) {
+        console.error("Razorpay API Error:", rpError);
+        // Provide a clearer error message if it's a 500 or bad request
+        if (rpError.statusCode === 500) {
+            throw new Error("Payment Gateway Error. Please check if the Plan ID in config matches your Razorpay Dashboard.");
+        }
+        if (rpError.statusCode === 400) {
+             throw new Error(`Invalid Request to Payment Gateway: ${rpError.error.description}`);
+        }
+        throw rpError;
+    }
 
     return { 
       success: true, 
