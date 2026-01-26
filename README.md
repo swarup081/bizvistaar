@@ -11,6 +11,16 @@ We handle the technology so business owners can focus on what they do best — *
 
 ---
 
+## 🔧 Troubleshooting & Configuration
+
+If you are a developer setting up this project, please read the **[AUDIT REPORT](./AUDIT_REPORT.md)** for critical setup instructions.
+
+**Key Requirements:**
+1.  **Razorpay Configuration:** You must update `src/app/config/razorpay-config.js` with your own Razorpay Plan IDs. Failure to do so will result in 500 errors during checkout.
+2.  **Supabase Env Vars:** Ensure `SUPABASE_SERVICE_ROLE_KEY` is set in your environment variables for the payment webhook to function correctly.
+
+---
+
 ## 💡 The Problem We Solve
 
 Many local business owners *know* they need a website and social media presence, but they face major barriers:
@@ -112,7 +122,8 @@ Includes:
 ---
 
 ### ✨ **Plan 2: Pro — ₹799/month**
-Includes everything in Starter +  
+Includes:
+- Everything in Starter +
 - Choice of 2 Business Tools  
 - 3 Social Media Posts per month  
 
@@ -121,7 +132,8 @@ Includes everything in Starter +
 ---
 
 ### 🚀 **Plan 3: Growth — ₹1499/month**
-Includes everything in Pro +  
+Includes:
+- Everything in Pro +
 - All Business Tools  
 - 8 Social Media Posts per month  
 - Google Maps Management  
