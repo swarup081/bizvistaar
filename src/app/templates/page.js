@@ -430,15 +430,32 @@ const TemplateCard = ({ title, description, url, previewUrl, editor, keywords, i
 
       const storeName = localStorage.getItem('storeName') || 'My New Site';
 
-      // Generate initial slug from store name
-      let site_slug = storeName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-      if (site_slug.length < 3) site_slug = `my-site-${Date.now()}`;
+      // Generate initial slug candidates
+      let baseSlug = storeName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      if (baseSlug.length < 3) baseSlug = `my-site`;
 
-      // Check availability of the clean name
-      const isAvailable = await checkSlugAvailability(site_slug);
+      let site_slug = baseSlug;
+      let isAvailable = await checkSlugAvailability(baseSlug);
+
       if (!isAvailable) {
-          // If taken, append timestamp for uniqueness
-          site_slug = `${site_slug}-${Date.now()}`;
+          // Try preferred suffixes before resorting to timestamp
+          const suffixes = ['official', 'store', 'shop', 'online', new Date().getFullYear()];
+          let found = false;
+
+          for (const suffix of suffixes) {
+              const candidate = `${baseSlug}-${suffix}`;
+              const available = await checkSlugAvailability(candidate);
+              if (available) {
+                  site_slug = candidate;
+                  found = true;
+                  break;
+              }
+          }
+
+          // Fallback to timestamp if all preferred suffixes are taken
+          if (!found) {
+              site_slug = `${baseSlug}-${Date.now()}`;
+          }
       }
 
       // Prepare initial data to ensure sidebar is pre-filled

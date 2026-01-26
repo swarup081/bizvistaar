@@ -5,6 +5,11 @@ import { NextResponse } from 'next/server';
 export async function POST(req) {
   try {
     // Lazy Initialization of Supabase inside the handler to avoid build-time errors if env vars are missing
+    // CRITICAL: Must use Service Role Key for Webhook to bypass RLS
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        console.error("[Webhook] CRITICAL ERROR: SUPABASE_SERVICE_ROLE_KEY is missing. Database updates will fail.");
+    }
+
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
       process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder'
@@ -155,7 +160,7 @@ export async function POST(req) {
                   if (updateError) {
                       console.error(`[Webhook] Error updating website for user ${userId}:`, updateError);
                   } else {
-                      console.log(`[Webhook] Successfully published website for user ${userId}`);
+                      console.log(`[Webhook] Successfully published website for user ${userId}. Update Payload:`, JSON.stringify(updatePayload));
                   }
               } else {
                   console.warn(`[Webhook] No website found for user ${userId} to publish.`);
