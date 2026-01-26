@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { Globe, User, ChevronDown, Search, X } from 'lucide-react'; 
 import { cn } from '@/lib/utils'; // Assuming cn is available
 import Logo from '@/lib/logo/logoOfBizVistar';
+import { checkSlugAvailability } from '../actions/websiteActions';
 
 
 // --- Primary Header Component (Non-Fixed, Scrolls) ---
@@ -428,7 +429,26 @@ const TemplateCard = ({ title, description, url, previewUrl, editor, keywords, i
       if (!template) throw new Error('Template not found in database.');
 
       const storeName = localStorage.getItem('storeName') || 'My New Site';
-      const site_slug = storeName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(); 
+
+      // Generate initial slug from store name
+      let site_slug = storeName.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      if (site_slug.length < 3) site_slug = `my-site-${Date.now()}`;
+
+      // Check availability of the clean name
+      const isAvailable = await checkSlugAvailability(site_slug);
+      if (!isAvailable) {
+          // If taken, append timestamp for uniqueness
+          site_slug = `${site_slug}-${Date.now()}`;
+      }
+
+      // Prepare initial data to ensure sidebar is pre-filled
+      const initialWebsiteData = {
+          name: storeName,
+          logoText: storeName,
+          footer: {
+              copyright: `© ${new Date().getFullYear()} ${storeName}. All Rights Reserved.`
+          }
+      };
 
       const { data: newSite, error: insertError } = await supabase
         .from('websites')
@@ -436,7 +456,7 @@ const TemplateCard = ({ title, description, url, previewUrl, editor, keywords, i
           user_id: user.id,
           template_id: template.id,
           site_slug: site_slug,
-          website_data: {} 
+          website_data: initialWebsiteData
         })
         .select('id') 
         .single();

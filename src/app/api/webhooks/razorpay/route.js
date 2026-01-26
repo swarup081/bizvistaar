@@ -131,6 +131,37 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Database Error' }, { status: 500 });
       }
 
+      // --- PUBLISH WEBSITE LOGIC ---
+      // If subscription is active, ensure website is published and data is synced
+      if (newStatus === 'active') {
+          try {
+              const { data: website } = await supabaseAdmin
+                  .from('websites')
+                  .select('id, draft_data')
+                  .eq('user_id', userId)
+                  .limit(1)
+                  .maybeSingle();
+
+              if (website) {
+                  const updatePayload = { is_published: true };
+
+                  // Promote draft_data if it exists and is not empty
+                  if (website.draft_data && Object.keys(website.draft_data).length > 0) {
+                      updatePayload.website_data = website.draft_data;
+                  }
+
+                  await supabaseAdmin
+                      .from('websites')
+                      .update(updatePayload)
+                      .eq('id', website.id);
+
+                  console.log(`Website published for user ${userId}`);
+              }
+          } catch (e) {
+              console.error("Error publishing website:", e);
+          }
+      }
+
       // --- BACKUP: Update Profile from Notes if missing ---
       if (userId && notes) {
           try {

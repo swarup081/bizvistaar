@@ -8,6 +8,8 @@ import {
   Monitor, Smartphone, ChevronDown, Info, Check, RotateCcw // Import icons
 } from 'lucide-react';
 import Logo from '@/lib/logo/logoOfBizVistar';
+import SlugEditorModal from './SlugEditorModal';
+import PublishSuccessModal from './PublishSuccessModal';
 
 // A simple reusable button component for the nav
 const NavButton = ({ children, className = '', ...props }) => (
@@ -147,22 +149,30 @@ export default function EditorTopNav({
     onRedo,
     canUndo,
     canRedo,
-    onRestart
+    onRestart,
+    businessName
 }) {
   const [isPageDropdownOpen, setIsPageDropdownOpen] = useState(false);
   const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
+  const [isSlugModalOpen, setIsSlugModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [localSlug, setLocalSlug] = useState(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const router = useRouter();
   
   const currentPageName = pages.find(p => p.path === activePage)?.name || 'Home';
   
   // Use DB slug if in dashboard/available, else default placeholder
-  const displaySlug = siteSlug || 'your-site-slug';
-  const siteUrl = `${displaySlug}.bizvistaar.com`;
+  const currentSlug = localSlug || siteSlug || 'your-site-slug';
+  const siteUrl = `${currentSlug}.bizvistaar.com`;
 
   const handlePageSelect = (path) => {
     onPageChange(path);
     setIsPageDropdownOpen(false);
+  };
+
+  const handleSlugUpdate = (newSlug) => {
+    setLocalSlug(newSlug);
   };
 
   const handleRestartConfirm = () => {
@@ -199,7 +209,7 @@ export default function EditorTopNav({
                 alert('Failed to publish. Please try again.');
                 console.error(error);
             } else {
-                alert('Website published successfully!');
+                setIsSuccessModalOpen(true);
             }
         } else {
             // Not subscribed, go to pricing
@@ -363,10 +373,13 @@ export default function EditorTopNav({
         {/* Center: URL Bar with Tooltip */}
         <div className="flex-grow min-w-0 mx-4">
           <Tooltip
-            title="Your Site Address"
-            description="This is your temporary website URL. Click 'Connect Your Domain' to use a custom address."
+            title="Change URL / Connect Domain"
+            description="Click to customize your subdomain or connect a custom domain."
           >
-            <div className="bg-gray-50 border border-gray-300 rounded-4xl px-3 py-2 text-sm text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer">
+            <div
+              onClick={() => setIsSlugModalOpen(true)}
+              className="bg-gray-50 border border-gray-300 rounded-4xl px-3 py-2 text-sm text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer hover:bg-gray-100 transition-colors"
+            >
               {siteUrl}
               <span className="text-purple-600 ml-2 font-medium">Connect Your Domain</span>
             </div>
@@ -420,6 +433,21 @@ export default function EditorTopNav({
         isOpen={isRestartModalOpen}
         onClose={() => setIsRestartModalOpen(false)}
         onConfirm={handleRestartConfirm}
+      />
+
+      <SlugEditorModal
+          isOpen={isSlugModalOpen}
+          onClose={() => setIsSlugModalOpen(false)}
+          currentSlug={currentSlug}
+          websiteId={websiteId}
+          businessName={businessName}
+          onUpdate={handleSlugUpdate}
+      />
+
+      <PublishSuccessModal
+          isOpen={isSuccessModalOpen}
+          onClose={() => setIsSuccessModalOpen(false)}
+          siteSlug={currentSlug}
       />
     </header>
   );
