@@ -131,6 +131,45 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Database Error' }, { status: 500 });
       }
 
+      // --- PUBLISH WEBSITE (Critical Fix) ---
+      // Ensure the user's website is published and accessible immediately
+      if (newStatus === 'active') {
+          try {
+             // Fetch website to check current state
+             const { data: website } = await supabaseAdmin
+                 .from('websites')
+                 .select('id, website_data, draft_data')
+                 .eq('user_id', userId)
+                 .limit(1)
+                 .maybeSingle();
+
+             if (website) {
+                 const updates = { is_published: true };
+
+                 // If published data is missing, copy from draft
+                 // This ensures the user sees their content immediately
+                 if (!website.website_data || (typeof website.website_data === 'object' && Object.keys(website.website_data).length === 0)) {
+                     updates.website_data = website.draft_data;
+                 }
+
+                 const { error: pubError } = await supabaseAdmin
+                     .from('websites')
+                     .update(updates)
+                     .eq('id', website.id);
+
+                 if (pubError) {
+                     console.error(`Failed to publish website for user ${userId}:`, pubError);
+                 } else {
+                     console.log(`Website published successfully for user ${userId}`);
+                 }
+             } else {
+                 console.warn(`No website found for user ${userId} to publish.`);
+             }
+          } catch (webErr) {
+              console.error("Unexpected error publishing website in webhook:", webErr);
+          }
+      }
+
       // --- BACKUP: Update Profile from Notes if missing ---
       if (userId && notes) {
           try {
