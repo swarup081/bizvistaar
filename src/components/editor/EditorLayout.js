@@ -302,6 +302,7 @@ useEffect(() => {
             canUndo={historyIndex > 0}
             canRedo={historyIndex < history.length - 1}
             onRestart={handleRestart}
+            businessName={businessData.name} // Pass Business Name for Slug Editor
           />
         </div>
 
