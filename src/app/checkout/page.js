@@ -465,7 +465,7 @@ function CheckoutContent() {
                      );
                      
                      if (verification.success) {
-                        router.push('/dashboard'); 
+                        router.push(`/dashboard?payment_success=true&sub_id=${response.razorpay_subscription_id}&pay_id=${response.razorpay_payment_id}`);
                      } else {
                         const contactNumber = process.env.NEXT_PUBLIC_CONTACT_FOUNDER || '919560411266';
                         setDialogConfig({
