@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import {
-  Monitor, Smartphone, ChevronDown, Info, Check, RotateCcw // Import icons
+  Monitor, Smartphone, ChevronDown, Info, Check, RotateCcw, AlertTriangle // Import icons
 } from 'lucide-react';
 import Logo from '@/lib/logo/logoOfBizVistar';
 
@@ -18,8 +18,6 @@ const NavButton = ({ children, className = '', ...props }) => (
     {children}
   </button>
 );
-
-// ... (IconUndo, IconRedo, VerticalSeparator, Tooltip components remain the same) ...
 
 // --- Custom SVG Icons ---
 const IconUndo = () => (
@@ -131,13 +129,75 @@ const RestartConfirmationModal = ({ isOpen, onClose, onConfirm }) => {
 };
 // --- End Restart Modal ---
 
+// --- Publish Confirmation Modal ---
+const PublishConfirmationModal = ({ isOpen, onClose, onConfirm, isPublishing }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+         <div className="flex items-start">
+            <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                <AlertTriangle className="h-6 w-6 text-blue-600" />
+            </div>
+            <div className="ml-4 text-left">
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Publish Website?</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                    This action will <strong>overwrite your live website</strong> with the changes from this draft.
+                    Your existing live content will be replaced.
+                </p>
+                <p className="text-sm text-gray-500">
+                    Are you sure you want to proceed?
+                </p>
+            </div>
+         </div>
+         <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse gap-3">
+            <button
+                onClick={onConfirm}
+                disabled={isPublishing}
+                className="w-full inline-flex justify-center rounded-3xl border border-transparent shadow-sm px-4 py-2 bg-black text-white hover:bg-gray-800 disabled:opacity-50 text-base font-medium sm:w-auto sm:text-sm"
+            >
+                {isPublishing ? 'Publishing...' : 'Yes, Publish'}
+            </button>
+            <button
+                onClick={onClose}
+                disabled={isPublishing}
+                className="mt-3 w-full inline-flex justify-center rounded-3xl border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:w-auto sm:text-sm"
+            >
+                Cancel
+            </button>
+         </div>
+       </div>
+    </div>
+  );
+};
+
+// --- Custom Alert Modal ---
+const AlertModal = ({ isOpen, onClose, title, message }) => {
+    if (!isOpen) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
+            <p className="text-gray-600 mb-6">{message}</p>
+            <button
+                onClick={onClose}
+                className="bg-black text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-800"
+            >
+                OK
+            </button>
+        </div>
+      </div>
+    );
+}
+
 
 export default function EditorTopNav({ 
-    mode, // 'dashboard' or undefined/null
-    siteSlug, // Passed from DB
+    mode,
+    siteSlug,
     templateName, 
-    websiteId, // <-- NEW PROP
-    saveStatus, // <-- NEW PROP
+    websiteId,
+    draftId, // <-- NEW
+    saveStatus,
     view, 
     onViewChange, 
     activePage, 
@@ -151,12 +211,15 @@ export default function EditorTopNav({
 }) {
   const [isPageDropdownOpen, setIsPageDropdownOpen] = useState(false);
   const [isRestartModalOpen, setIsRestartModalOpen] = useState(false);
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+
+  const [alertState, setAlertState] = useState({ isOpen: false, title: '', message: '' });
+
   const router = useRouter();
   
   const currentPageName = pages.find(p => p.path === activePage)?.name || 'Home';
   
-  // Use DB slug if in dashboard/available, else default placeholder
   const displaySlug = siteSlug || 'your-site-slug';
   const siteUrl = `${displaySlug}.bizvistaar.com`;
 
@@ -170,44 +233,66 @@ export default function EditorTopNav({
     setIsRestartModalOpen(false);
   };
 
-  const handlePublish = async () => {
+  const onPublishClick = () => {
+      setIsPublishModalOpen(true);
+  };
+
+  const handlePublishConfirm = async () => {
     if (isPublishing) return;
     setIsPublishing(true);
     try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            router.push('/login');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            router.push('/sign-in');
             return;
         }
 
-        // Check subscription
-        const { data: sub } = await supabase
-            .from('subscriptions')
-            .select('status')
-            .eq('user_id', user.id)
-            .in('status', ['active', 'trialing'])
-            .order('current_period_end', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-        
-        if (sub) {
-            // User is subscribed, publish directly
-            const { error } = await supabase.functions.invoke('publish-website', {
-                body: { websiteId }
-            });
-            if (error) {
-                alert('Failed to publish. Please try again.');
-                console.error(error);
-            } else {
-                alert('Website published successfully!');
-            }
-        } else {
-            // Not subscribed, go to pricing
-            router.push(`/pricing?site_id=${websiteId}`);
+        // Call publish-website Edge Function
+        // We pass draftId if available, else websiteId
+        const payload = {};
+        if (draftId) payload.draftId = draftId;
+        else if (websiteId) payload.websiteId = websiteId;
+        else {
+             setAlertState({ isOpen: true, title: 'Error', message: 'No content to publish.' });
+             setIsPublishing(false);
+             setIsPublishModalOpen(false);
+             return;
         }
-    } catch (error) {
-        console.error('Publish error:', error);
-        alert('An error occurred.');
+
+        const { data: resData, error } = await supabase.functions.invoke('publish-website', {
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: payload
+        });
+
+        if (error) {
+            // Check for payment required
+             // We can parse error message
+             const msg = error.message || 'Failed to publish.';
+             // If function returned specific 403 JSON, supabase client might just give generic error object?
+             // Actually supabase.functions.invoke returns error object if non-2xx?
+             // Or data is null and error is set.
+
+             // If we returned 403 from function, it might be in error.context?
+             console.error('Publish error:', error);
+             setAlertState({ isOpen: true, title: 'Publish Failed', message: 'An error occurred while publishing. Please try again.' });
+        } else {
+             // Success?
+             // Check if custom error returned in data (if status was 200 but logic failed?)
+             // No, my function returns 4xx/5xx for errors.
+
+             // Wait, Supabase invoke returns error if status is not 2xx.
+             // We need to parse error body if possible.
+             // Usually error is { message: ... }
+
+             setIsPublishModalOpen(false);
+             setAlertState({ isOpen: true, title: 'Success!', message: 'Your website has been published successfully.' });
+        }
+
+    } catch (err) {
+        console.error('Publish unexpected error:', err);
+        setAlertState({ isOpen: true, title: 'Error', message: 'An unexpected error occurred.' });
     } finally {
         setIsPublishing(false);
     }
@@ -279,7 +364,7 @@ export default function EditorTopNav({
             description="See what your live site will look like to visitors."
           >
             <Link 
-              href={`/preview/site/${siteSlug}`}
+              href={`/preview/site/${siteSlug || 'draft'}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-sm font-medium text-purple-600 px-3 py-2 rounded-full transition-colors hover:bg-purple-50"
@@ -288,24 +373,22 @@ export default function EditorTopNav({
             </Link>
           </Tooltip>
           
-          {/* --- UPDATED PUBLISH LINK --- */}
           {mode === 'dashboard' ? (
               <button
-                onClick={handlePublish}
+                onClick={onPublishClick}
                 disabled={isPublishing}
                 className="flex items-center gap-2 bg-black text-white text-sm font-medium px-6 py-2 rounded-4xl  transition-colors disabled:opacity-50"
               >
-                {isPublishing ? 'Publishing...' : 'Publish'}
+                Publish
               </button>
           ) : (
               <Link
-                href={`/pricing?site_id=${websiteId}`} // Pass site_id
+                href={`/pricing?site_id=${websiteId || ''}`} // Pass site_id if available
                 className="flex items-center gap-2 bg-black text-white text-sm font-medium px-6 py-2 rounded-4xl  transition-colors"
               >
                 Publish
               </Link>
           )}
-          {/* --- END OF CHANGE --- */}
 
         </div>
       </div>
@@ -421,6 +504,21 @@ export default function EditorTopNav({
         onClose={() => setIsRestartModalOpen(false)}
         onConfirm={handleRestartConfirm}
       />
+
+      <PublishConfirmationModal
+        isOpen={isPublishModalOpen}
+        onClose={() => setIsPublishModalOpen(false)}
+        onConfirm={handlePublishConfirm}
+        isPublishing={isPublishing}
+      />
+
+      <AlertModal
+        isOpen={alertState.isOpen}
+        title={alertState.title}
+        message={alertState.message}
+        onClose={() => setAlertState({ ...alertState, isOpen: false })}
+      />
+
     </header>
   );
 }
