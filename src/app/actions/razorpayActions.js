@@ -282,7 +282,7 @@ export async function verifyPaymentAction(paymentId, subscriptionId, signature) 
                            // Upsert Subscription
                            await supabaseAdmin.from('subscriptions').upsert(upsertPayload, { onConflict: 'razorpay_subscription_id' });
 
-                           // Publish Website
+                           // Publish Website & Update Names
                            const { data: website } = await supabaseAdmin
                              .from('websites')
                              .select('id, website_data, draft_data')
@@ -291,7 +291,11 @@ export async function verifyPaymentAction(paymentId, subscriptionId, signature) 
                              .maybeSingle();
 
                            if (website) {
-                               const updates = { is_published: true };
+                               const updates = {
+                                   is_published: true,
+                                   user_name: subData.notes?.customer_name,
+                                   business_name: subData.notes?.customer_company
+                               };
                                // Copy draft to published if empty
                                if (!website.website_data || (typeof website.website_data === 'object' && Object.keys(website.website_data).length === 0)) {
                                    updates.website_data = website.draft_data;
@@ -369,6 +373,7 @@ export async function createSubscriptionAction(planName, billingCycle, couponCod
             customer_email: b.email || '',
             customer_phone: b.phoneNumber || '',
             customer_gst: b.gstNumber || '',
+            customer_company: b.companyName || '', // Added company name
             customer_address: `${b.address || ''}, ${b.city || ''}, ${b.state || ''}, ${b.zipCode || ''}`.substring(0, 250) // Truncate to fit
         };
     }

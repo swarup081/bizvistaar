@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation'; // Import useSearchParams
+import { useSearchParams, useRouter } from 'next/navigation'; // Import useRouter
 import EditorTopNav from './EditorTopNav';
 import EditorSidebar from './EditorSidebar';
 import { supabase } from '@/lib/supabaseClient'; // Import your client
@@ -27,14 +27,17 @@ export default function EditorLayout({ templateName, mode, websiteId: propWebsit
   const iframeRef = useRef(null);
   const [activeAccordion, setActiveAccordion] = useState('global');
   
+  const router = useRouter();
+
   // Get websiteId from URL query or prop
   const searchParams = useSearchParams();
   const websiteId = propWebsiteId || searchParams.get('site_id');
+  const draftId = searchParams.get('draft_id'); // Get draft_id
   
   const [saveStatus, setSaveStatus] = useState('Saved'); // To show save status
   const debounceTimer = useRef(null); // For debouncing save
 
-  const editorDataKey = `editorData_${templateName}_${websiteId || 'new'}`;
+  const editorDataKey = `editorData_${templateName}_${websiteId || draftId || 'new'}`;
   const cartDataKey = `${templateName}Cart`; 
 
   const defaultData = useMemo(() => {
@@ -77,7 +80,7 @@ export default function EditorLayout({ templateName, mode, websiteId: propWebsit
       setHistory([defaultData]);
       setHistoryIndex(0);
     }
-  }, [templateName, websiteId, defaultData, editorDataKey]); 
+  }, [templateName, websiteId, draftId, defaultData, editorDataKey]);
 
 // Auto-save logic
 useEffect(() => {
@@ -96,21 +99,24 @@ useEffect(() => {
   }
 
   debounceTimer.current = setTimeout(async () => {
-    if (websiteId) {
+    // Condition: Save if websiteId OR draftId OR it's a new draft (implicit)
+    // We always attempt to save if user is logged in
       
-      // --- ADD THIS LINE ---
-      const { data: { session } } = await supabase.auth.getSession();
-      
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session) {
       // Call the 'save-website' Supabase function
-      const { error } = await supabase.functions.invoke('save-website', {
-        
-        // --- ADD THIS 'headers' OBJECT ---
+      const { data: resData, error } = await supabase.functions.invoke('save-website', {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         },
-        // --- END OF ADDITIONS ---
-        
-        body: { websiteId, websiteData: businessData },
+        body: {
+            websiteId,
+            draftId,
+            templateName, // Pass template name so backend can find ID
+            websiteData: businessData,
+            name: businessData.businessName || 'My Website' // Pass name
+        },
       });
 
       if (error) {
@@ -118,6 +124,13 @@ useEffect(() => {
         console.error('Error saving to Supabase:', error);
       } else {
         setSaveStatus('Saved');
+        // Handle New Draft Creation
+        if (resData && resData.draftId && !draftId && !websiteId) {
+             // We created a new draft, update URL so future saves use this ID
+             const newParams = new URLSearchParams(searchParams.toString());
+             newParams.set('draft_id', resData.draftId);
+             router.replace(`?${newParams.toString()}`, { scroll: false });
+        }
       }
     } else {
       setSaveStatus('Saved (Local)');
@@ -126,7 +139,7 @@ useEffect(() => {
 
   return () => clearTimeout(debounceTimer.current);
 
-}, [businessData, editorDataKey, websiteId]);
+}, [businessData, editorDataKey, websiteId, draftId, templateName, searchParams, router]);
   
   const handleDataUpdate = (updaterFn) => {
     setBusinessData(prevData => {
@@ -291,6 +304,7 @@ useEffect(() => {
             siteSlug={siteSlug}
             templateName={templateName}
             websiteId={websiteId} // Pass websiteId to the nav
+            draftId={draftId} // Pass draftId to the nav
             saveStatus={saveStatus} // Pass saveStatus to the nav
             view={view}
             onViewChange={setView}
