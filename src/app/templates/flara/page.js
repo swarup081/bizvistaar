@@ -80,22 +80,22 @@ export default function CandleaPage() {
 
             {/* --- Feature Section 1 --- */}
             <Editable focusId="about">
-                <section id="about" className="py-24 bg-brand-primary">
-                    <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                        <div className="flex justify-center">
+                <section id="about" className="py-10 md:py-24 bg-brand-primary">
+                    <div className="container mx-auto px-6 flex flex-row md:grid md:grid-cols-2 gap-4 md:gap-12 items-center">
+                        <div className="flex justify-center w-1/2 md:w-full">
                             <img 
                                 src={businessData.feature1.image} 
                                 alt="Crafting warmth" 
                                 className="w-full max-w-md lg:max-w-lg aspect-square object-cover"
                             />
                         </div>
-                        <div className="md:pl-10 text-center md:text-left items-center md:items-start flex flex-col">
-                            <h2 className="text-4xl md:text-5xl font-bold text-brand-text leading-tight font-serif">{businessData.feature1.title}</h2>
-                            <p className="text-lg text-brand-text opacity-70 mt-6 max-w-lg">{businessData.feature1.text}</p>
-                            <p className="text-base text-brand-text opacity-70 mt-4 max-w-lg">{businessData.feature1.subtext}</p>
+                        <div className="md:pl-10 text-left items-start flex flex-col w-1/2 md:w-full">
+                            <h2 className="text-xl md:text-5xl font-bold text-brand-text leading-tight font-serif">{businessData.feature1.title}</h2>
+                            <p className="text-xs md:text-lg text-brand-text opacity-70 mt-2 md:mt-6 max-w-lg line-clamp-3 md:line-clamp-none">{businessData.feature1.text}</p>
+                            <p className="text-[10px] md:text-base text-brand-text opacity-70 mt-2 md:mt-4 max-w-lg hidden md:block">{businessData.feature1.subtext}</p>
                             <Link
                                 href="#about"
-                                className="mt-8 inline-flex items-center gap-2 font-semibold text-brand-text hover:text-brand-bg border border-brand-text hover:bg-brand-secondary transition-all duration-300 px-4 py-2 "
+                                className="mt-4 md:mt-8 inline-flex items-center gap-2 font-semibold text-brand-text hover:text-brand-bg border border-brand-text hover:bg-brand-secondary transition-all duration-300 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-base"
                             >
                                 <span>{businessData.feature1.cta}</span>
                                 <ArrowRightIcon />
@@ -116,26 +116,31 @@ export default function CandleaPage() {
                                 <ArrowRightIcon />
                             </Link>
                         </div>
-                        <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-8">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-8 md:gap-8">
                             {collectionProducts.map((item, index) => (
-                                <Link 
-                                href={`${basePath}/product/${item.id}`}
-                                key={item.id} 
-                                className="group relative block overflow-hidden shadow-lg aspect-[4/5] rounded-t-full md:rounded-none md:hover:rounded-t-full transition-all duration-500"
-                                >
-                                    <img 
-                                        src={item.image} 
-                                        alt={item.name} 
-                                        className="w-full h-full object-cover transition-transform duration-300"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                                    <h3 className="absolute bottom-2 left-2 md:bottom-6 md:left-6 text-xs md:text-3xl font-bold text-white font-serif">{item.name}</h3>
-                                    <div className="absolute inset-0 flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
-                                        <span className="bg-brand-bg text-brand-text px-2 py-1 text-[10px] md:text-xs md:px-6 md:py-3 md:font-semibold uppercase tracking-wider shadow-lg">
-                                            View Product
-                                        </span>
+                                <div key={item.id} className={`${index >= 2 ? 'hidden md:block' : ''}`}>
+                                    <Link
+                                    href={`${basePath}/product/${item.id}`}
+                                    className="group relative block overflow-hidden shadow-lg aspect-[4/5] rounded-t-full md:rounded-none md:hover:rounded-t-full transition-all duration-500"
+                                    >
+                                        <img
+                                            src={item.image}
+                                            alt={item.name}
+                                            className="w-full h-full object-cover transition-transform duration-300"
+                                        />
+                                        <div className="hidden md:block absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                                        <h3 className="hidden md:block absolute bottom-2 left-2 md:bottom-6 md:left-6 text-xs md:text-3xl font-bold text-white font-serif">{item.name}</h3>
+                                        <div className="hidden md:flex absolute inset-0 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <span className="bg-brand-bg text-brand-text px-6 py-3 font-semibold uppercase tracking-wider shadow-lg">
+                                                View Product
+                                            </span>
+                                        </div>
+                                    </Link>
+                                    <div className="block md:hidden text-center mt-3">
+                                        <h3 className="text-sm font-bold text-brand-text font-serif">{item.name}</h3>
+                                        <Link href={`${basePath}/product/${item.id}`} className="text-xs text-brand-text underline mt-1 block">View Product</Link>
                                     </div>
-                                </Link>
+                                </div>
                             ))}
                         </div>
                     </div>
@@ -169,9 +174,9 @@ export default function CandleaPage() {
 
             {/* --- Feature Section 2 --- */}
             <Editable focusId="feature2">
-                <section id="feature2" className="py-24 overflow-hidden bg-brand-bg">
-                    <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-16 md:items-end">
-                        <div className="relative">
+                <section id="feature2" className="py-10 md:py-24 overflow-hidden bg-brand-bg">
+                    <div className="container mx-auto px-6 flex flex-row md:grid md:grid-cols-2 gap-4 md:gap-16 items-end">
+                        <div className="relative w-1/2 md:w-full">
                             <div className="w-full aspect-[4/5] rounded-t-full overflow-hidden">
                                 <img 
                                     src={businessData.feature2.image1} 
@@ -179,17 +184,17 @@ export default function CandleaPage() {
                                     className="w-full h-full object-cover"
                                 />
                             </div>
-                            <p className="text-base text-brand-text opacity-70 mt-8 max-w-md">{businessData.feature2.subtext}</p>
+                            <p className="text-[10px] md:text-base text-brand-text opacity-70 mt-4 md:mt-8 max-w-md hidden md:block">{businessData.feature2.subtext}</p>
                         </div>
-                        <div className="flex flex-col gap-8">
+                        <div className="flex flex-col gap-4 md:gap-8 w-1/2 md:w-full">
                             <div className="md:pl-10 text-left items-start flex flex-col w-full">
-                                <h2 className="text-4xl md:text-5xl font-bold text-brand-text leading-tight font-serif">{businessData.feature2.title}</h2>
-                                <p className="text-lg text-brand-text opacity-70 mt-6 w-full max-w-none md:max-w-lg">{businessData.feature2.text}</p>
+                                <h2 className="text-xl md:text-5xl font-bold text-brand-text leading-tight font-serif">{businessData.feature2.title}</h2>
+                                <p className="text-xs md:text-lg text-brand-text opacity-70 mt-2 md:mt-6 w-full max-w-none md:max-w-lg">{businessData.feature2.text}</p>
 
                                 <img 
                                     src={businessData.feature2.image2}
                                     alt="Calming candle"
-                                    className="w-full max-w-xs h-auto  object-cover mt-8"
+                                    className="w-full max-w-xs h-auto object-cover mt-4 md:mt-8"
                                 />
                             </div>
                         </div>
@@ -205,7 +210,7 @@ export default function CandleaPage() {
                             <h2 className="text-4xl font-bold text-brand-text font-serif">{businessData.blog.title}</h2>
                             {/* "See All" Link Removed */}
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
                             {(businessData.blog.items || []).map(post => (
                                 <div key={post.title} className="group">
                                     <a href="#" className="block overflow-hidden aspect-video bg-brand-bg">
