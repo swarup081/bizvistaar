@@ -89,7 +89,7 @@ export const ProductCard = ({ item, templateName }) => { // templateName is actu
     return (
         <div className="group text-center h-full flex flex-col justify-between border border-transparent hover:border-brand-primary/50 transition-all p-2 ">
             <div>
-                <a href={`${basePath}/product/${item.id}`} className="block bg-brand-primary overflow-hidden relative aspect-[4/5] h-80 ">
+                <a href={`${basePath}/product/${item.id}`} className="block bg-brand-primary overflow-hidden relative aspect-[4/5] w-full ">
                     <img 
                         src={item.image || 'https://placehold.co/600x750/CCCCCC/909090?text=Image+Missing'} 
                         alt={item.name} 
@@ -110,7 +110,7 @@ export const ProductCard = ({ item, templateName }) => { // templateName is actu
                 </div>
             </div>
 
-            <div className="mt-4 px-1 space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pb-2">
+            <div className="mt-4 px-1 space-y-2 pb-2">
                  <a 
                     href={`${basePath}/product/${item.id}`}
                     className="w-full text-center block bg-brand-primary text-brand-text px-4 py-2.5 font-semibold text-sm hover:bg-brand-primary/80 transition-colors "
@@ -141,8 +141,8 @@ export const Footer = () => {
     return (
      <footer id="contact" className="bg-brand-text text-brand-bg pt-20 pb-10">
         <div className="container mx-auto px-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
-                <div className="lg:col-span-2">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-12">
+                <div className="col-span-2 lg:col-span-2">
                     <h3 className="text-3xl font-serif mb-4">{businessData?.footer?.promoTitle || "Stay Updated"}</h3>
                     <p className="text-lg text-brand-bg/70 mb-4">{businessData?.footer?.subscribeTitle || "Subscribe for latest offers"}</p>
                   <form className="relative w-full mt-4">
