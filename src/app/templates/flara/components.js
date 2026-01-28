@@ -87,7 +87,7 @@ export const ProductCard = ({ item, templateName }) => { // templateName is actu
     const category = businessData.categories.find(c => c.id === item.category);
 
     return (
-        <div className="group text-center h-full flex flex-col justify-between border border-transparent hover:border-brand-primary/50 transition-all p-2 ">
+        <div className="group text-center h-full flex flex-col justify-between border border-transparent hover:border-brand-primary/50 transition-all">
             <div>
                 <a href={`${basePath}/product/${item.id}`} className="block bg-brand-primary overflow-hidden relative aspect-[4/5] w-full ">
                     <img 
@@ -175,10 +175,10 @@ export const Footer = () => {
                     </ul>
                 </div>
 
-                <div>
-                    <h4 className="text-lg font-bold font-serif mb-4 uppercase tracking-wider">Categories</h4>
+                <div className="lg:col-auto text-right md:text-left">
+                    <h4 className="text-lg font-bold font-serif mb-4 uppercase tracking-wider">Get Help</h4>
                     <ul className="space-y-2">
-                        {businessData?.footer?.links?.categories?.map(link => (
+                        {businessData?.footer?.links?.getHelp?.map(link => (
                             <li key={link.name}>
                                 <a href={resolveLink(link.url)} className="text-brand-bg/70 hover:text-brand-bg">{link.name}</a>
                             </li>
@@ -186,10 +186,10 @@ export const Footer = () => {
                     </ul>
                 </div>
 
-                <div className="col-start-2 lg:col-auto">
-                    <h4 className="text-lg font-bold font-serif mb-4 uppercase tracking-wider">Get Help</h4>
+                <div className="hidden lg:block">
+                    <h4 className="text-lg font-bold font-serif mb-4 uppercase tracking-wider">Categories</h4>
                     <ul className="space-y-2">
-                        {businessData?.footer?.links?.getHelp?.map(link => (
+                        {businessData?.footer?.links?.categories?.map(link => (
                             <li key={link.name}>
                                 <a href={resolveLink(link.url)} className="text-brand-bg/70 hover:text-brand-bg">{link.name}</a>
                             </li>

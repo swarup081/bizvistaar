@@ -91,8 +91,8 @@ export default function CheckoutPage() {
     };
 
     return (
-        <div className="container mx-auto px-6 py-20">
-            <h1 className="text-5xl font-bold text-brand-text font-serif text-center mb-12">Checkout</h1>
+        <div className="container mx-auto px-4 md:px-6 py-10 md:py-20">
+            <h1 className="text-3xl md:text-5xl font-bold text-brand-text font-serif text-center mb-8 md:mb-12">Checkout</h1>
             
             {cartDetails.length === 0 ? (
                 <div className="text-center">
@@ -105,7 +105,7 @@ export default function CheckoutPage() {
                     </a>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
                     
                     {/* Shipping Details Form */}
                     <div className="font-sans">
@@ -151,7 +151,7 @@ export default function CheckoutPage() {
                     </div>
                     
                     {/* Order Summary */}
-                    <div className="bg-brand-primary p-8 h-fit">
+                    <div className="bg-brand-primary p-5 md:p-8 h-fit">
                         <h2 className="text-2xl font-serif font-semibold text-brand-text mb-6">Your Order</h2>
                         
                         <div className="space-y-4 border-b border-brand-text/20 pb-4">

@@ -116,12 +116,12 @@ export default function CandleaPage() {
                                 <ArrowRightIcon />
                             </Link>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-8">
+                        <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-8">
                             {collectionProducts.map((item, index) => (
                                 <Link 
                                 href={`${basePath}/product/${item.id}`}
                                 key={item.id} 
-                                className={`group relative block overflow-hidden shadow-lg aspect-[4/5] rounded-t-full ${index > 1 ? 'hidden md:block' : ''}`}
+                                className="group relative block overflow-hidden shadow-lg aspect-[4/5] rounded-t-full md:rounded-none md:hover:rounded-t-full transition-all duration-500"
                                 >
                                     <img 
                                         src={item.image} 
@@ -130,8 +130,8 @@ export default function CandleaPage() {
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                                     <h3 className="absolute bottom-2 left-2 md:bottom-6 md:left-6 text-xs md:text-3xl font-bold text-white font-serif">{item.name}</h3>
-                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                        <span className="bg-brand-bg text-brand-text px-2 py-1 text-xs md:px-6 md:py-3 md:font-semibold uppercase tracking-wider shadow-lg">
+                                    <div className="absolute inset-0 flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
+                                        <span className="bg-brand-bg text-brand-text px-2 py-1 text-[10px] md:text-xs md:px-6 md:py-3 md:font-semibold uppercase tracking-wider shadow-lg">
                                             View Product
                                         </span>
                                     </div>
@@ -182,7 +182,7 @@ export default function CandleaPage() {
                             <p className="text-base text-brand-text opacity-70 mt-8 max-w-md">{businessData.feature2.subtext}</p>
                         </div>
                         <div className="flex flex-col gap-8">
-                            <div className="md:pl-10 text-center md:text-left items-center md:items-start flex flex-col w-full">
+                            <div className="md:pl-10 text-left items-start flex flex-col w-full">
                                 <h2 className="text-4xl md:text-5xl font-bold text-brand-text leading-tight font-serif">{businessData.feature2.title}</h2>
                                 <p className="text-lg text-brand-text opacity-70 mt-6 w-full max-w-none md:max-w-lg">{businessData.feature2.text}</p>
 
