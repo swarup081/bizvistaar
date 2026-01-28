@@ -59,7 +59,7 @@ export default function ProductDetailPage() {
 
     return (
         <div className="container mx-auto px-4 md:px-6 py-12 md:py-20 font-sans">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-12 items-start">
                 
                 {/* --- FIX: Image (padding and bg removed) --- */}
                 <div className="bg-brand-primary aspect-[4/5] overflow-hidden rounded-xl md:rounded-lg relative">
