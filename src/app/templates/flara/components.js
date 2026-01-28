@@ -186,7 +186,7 @@ export const Footer = () => {
                     </ul>
                 </div>
 
-                <div>
+                <div className="col-start-2 lg:col-auto">
                     <h4 className="text-lg font-bold font-serif mb-4 uppercase tracking-wider">Get Help</h4>
                     <ul className="space-y-2">
                         {businessData?.footer?.links?.getHelp?.map(link => (

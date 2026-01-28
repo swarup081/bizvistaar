@@ -15,7 +15,7 @@ export default function CheckoutPage() {
         state: '',
         zipCode: '',
         phone: '',
-        email: '' // Added email field
+        note: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState('');
@@ -122,8 +122,8 @@ export default function CheckoutPage() {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-brand-text/80 mb-1">Email</label>
-                                <input required name="email" onChange={handleChange} type="email" className="w-full p-3 border border-brand-text/30 focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary outline-none" />
+                                <label className="block text-sm font-medium text-brand-text/80 mb-1">Phone Number</label>
+                                <input required name="phone" onChange={handleChange} type="tel" className="w-full p-3 border border-brand-text/30 focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary outline-none" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-brand-text/80 mb-1">Address</label>
@@ -144,8 +144,8 @@ export default function CheckoutPage() {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-brand-text/80 mb-1">Phone</label>
-                                <input required name="phone" onChange={handleChange} type="tel" className="w-full p-3 border border-brand-text/30 focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary outline-none" />
+                                <label className="block text-sm font-medium text-brand-text/80 mb-1">Note (Optional)</label>
+                                <input name="note" onChange={handleChange} type="text" className="w-full p-3 border border-brand-text/30 focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary outline-none" />
                             </div>
                         </form>
                     </div>

@@ -28,14 +28,14 @@ export default function CandleaPage() {
         <>
             {/* --- Hero Section --- */}
             <section id="home" className="container mx-auto px-6 py-10 md:py-32">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div className="flex flex-row md:grid md:grid-cols-2 gap-4 md:gap-12 items-center">
                     <Editable focusId="hero">
-                        <div className="flex flex-col gap-6 md:pr-10 text-center md:text-left items-center md:items-start">
-                            <h1 className="text-3xl md:text-7xl font-bold text-brand-text leading-tight font-serif">{businessData.hero.title}</h1>
-                            <p className="text-lg text-brand-text opacity-70 max-w-md">{businessData.hero.subtitle}</p>
+                        <div className="flex flex-col gap-4 md:gap-6 md:pr-10 text-left items-start w-1/2 md:w-full">
+                            <h1 className="text-2xl md:text-7xl font-bold text-brand-text leading-tight font-serif">{businessData.hero.title}</h1>
+                            <p className="text-xs md:text-lg text-brand-text opacity-70 max-w-md hidden md:block">{businessData.hero.subtitle}</p>
                        <Link 
                             href={`${basePath}/shop`}
-                            className="mt-4 inline-flex items-center gap-3 btn btn-secondary px-8 py-3 text-base font-medium tracking-wider uppercase border border-brand-secondary bg-brand-secondary text-brand-bg hover:opacity-90 transition-all duration-300"
+                            className="mt-2 md:mt-4 inline-flex items-center gap-2 md:gap-3 btn btn-secondary px-4 py-2 md:px-8 md:py-3 text-xs md:text-base font-medium tracking-wider uppercase border border-brand-secondary bg-brand-secondary text-brand-bg hover:opacity-90 transition-all duration-300"
                         >
                             <span>{businessData.hero.cta}</span>
                             <ArrowRightIcon />
@@ -43,8 +43,8 @@ export default function CandleaPage() {
                         </div>
                     </Editable>
                     <Editable focusId="hero">
-                        <div className="flex justify-center">
-                            <div className="w-full max-w-md lg:max-w-lg aspect-[4/5] rounded-bl-[150px] rounded-tr-[150px] overflow-hidden">
+                        <div className="flex justify-center w-1/2 md:w-full">
+                            <div className="w-full max-w-md lg:max-w-lg aspect-[4/5] rounded-bl-[50px] rounded-tr-[50px] md:rounded-bl-[150px] md:rounded-tr-[150px] overflow-hidden">
                                 <img 
                                     src={businessData.hero.image} 
                                     alt="Hero Candle" 
@@ -116,12 +116,12 @@ export default function CandleaPage() {
                                 <ArrowRightIcon />
                             </Link>
                         </div>
-                        <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-8">
-                            {collectionProducts.map(item => (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-8">
+                            {collectionProducts.map((item, index) => (
                                 <Link 
                                 href={`${basePath}/product/${item.id}`}
                                 key={item.id} 
-                                className="group relative block overflow-hidden shadow-lg aspect-[4/5] rounded-t-full"
+                                className={`group relative block overflow-hidden shadow-lg aspect-[4/5] rounded-t-full ${index > 1 ? 'hidden md:block' : ''}`}
                                 >
                                     <img 
                                         src={item.image} 
@@ -182,9 +182,9 @@ export default function CandleaPage() {
                             <p className="text-base text-brand-text opacity-70 mt-8 max-w-md">{businessData.feature2.subtext}</p>
                         </div>
                         <div className="flex flex-col gap-8">
-                            <div className="md:pl-10 text-center md:text-left items-center md:items-start flex flex-col">
+                            <div className="md:pl-10 text-center md:text-left items-center md:items-start flex flex-col w-full">
                                 <h2 className="text-4xl md:text-5xl font-bold text-brand-text leading-tight font-serif">{businessData.feature2.title}</h2>
-                                <p className="text-lg text-brand-text opacity-70 mt-6 max-w-lg w-full md:w-auto">{businessData.feature2.text}</p>
+                                <p className="text-lg text-brand-text opacity-70 mt-6 w-full max-w-none md:max-w-lg">{businessData.feature2.text}</p>
 
                                 <img 
                                     src={businessData.feature2.image2}
