@@ -27,15 +27,15 @@ export default function CandleaPage() {
     return (
         <>
             {/* --- Hero Section --- */}
-            <section id="home" className="container mx-auto px-6 py-20 md:py-32">
+            <section id="home" className="container mx-auto px-6 py-10 md:py-32">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                     <Editable focusId="hero">
                         <div className="flex flex-col gap-6 md:pr-10 text-center md:text-left items-center md:items-start">
-                            <h1 className="text-5xl md:text-7xl font-bold text-brand-text leading-tight font-serif">{businessData.hero.title}</h1>
+                            <h1 className="text-3xl md:text-7xl font-bold text-brand-text leading-tight font-serif">{businessData.hero.title}</h1>
                             <p className="text-lg text-brand-text opacity-70 max-w-md">{businessData.hero.subtitle}</p>
                        <Link 
                             href={`${basePath}/shop`}
-                            className="mt-4 inline-flex items-center gap-3 btn btn-secondary px-8 py-3 text-base font-medium tracking-wider uppercase border border-brand-secondary text-brand-text hover:bg-brand-secondary hover:text-brand-bg transition-all duration-300"
+                            className="mt-4 inline-flex items-center gap-3 btn btn-secondary px-8 py-3 text-base font-medium tracking-wider uppercase border border-brand-secondary bg-brand-secondary text-brand-bg hover:opacity-90 transition-all duration-300"
                         >
                             <span>{businessData.hero.cta}</span>
                             <ArrowRightIcon />
@@ -58,7 +58,7 @@ export default function CandleaPage() {
             
             {/* --- Info Bar --- */}
             <Editable focusId="global">
-                <section className="py-6 bg-brand-bg border-y border-brand-primary/20 overflow-hidden">
+                <section className="py-3 bg-brand-bg border-y border-brand-primary/20 overflow-hidden">
                     <div className="flex whitespace-nowrap">
                         <div className="flex marquee items-center">
                             {(businessData.infoBar || []).map((text, i) => (
@@ -111,17 +111,17 @@ export default function CandleaPage() {
                     <div className="container mx-auto px-6">
                         <div className="flex justify-between items-center mb-12">
                             <h2 className="text-4xl font-bold text-brand-text font-serif">{businessData.collection.title}</h2>
-                            <Link href={`${basePath}/shop`} className="inline-flex items-center gap-2 font-semibold text-brand-text hover:text-brand-bg border border-brand-text hover:bg-brand-secondary transition-all duration-300 px-4 py-2 ">
+                            <Link href={`${basePath}/shop`} className="inline-flex items-center gap-2 font-semibold text-brand-bg bg-brand-secondary border border-brand-text hover:opacity-90 transition-all duration-300 px-4 py-2 ">
                                 <span>See All</span>
                                 <ArrowRightIcon />
                             </Link>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-8">
                             {collectionProducts.map(item => (
                                 <Link 
                                 href={`${basePath}/product/${item.id}`}
                                 key={item.id} 
-                                className="group relative block overflow-hidden shadow-lg aspect-[4/5] hover:rounded-t-full"
+                                className="group relative block overflow-hidden shadow-lg aspect-[4/5] rounded-t-full"
                                 >
                                     <img 
                                         src={item.image} 
@@ -129,9 +129,9 @@ export default function CandleaPage() {
                                         className="w-full h-full object-cover transition-transform duration-300"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                                    <h3 className="absolute bottom-6 left-6 text-3xl font-bold text-white font-serif">{item.name}</h3>
+                                    <h3 className="absolute bottom-2 left-2 md:bottom-6 md:left-6 text-xs md:text-3xl font-bold text-white font-serif">{item.name}</h3>
                                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                        <span className="bg-brand-bg text-brand-text px-6 py-3 font-semibold uppercase tracking-wider shadow-lg">
+                                        <span className="bg-brand-bg text-brand-text px-2 py-1 text-xs md:px-6 md:py-3 md:font-semibold uppercase tracking-wider shadow-lg">
                                             View Product
                                         </span>
                                     </div>
@@ -147,7 +147,7 @@ export default function CandleaPage() {
                 <Editable focusId="collection">
                     <div className="container mx-auto px-6 text-center">
                         <h2 className="text-4xl font-bold text-brand-text mb-16 font-serif">{businessData.bestSellers.title}</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16 items-stretch">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16 items-stretch">
                             {bestSellerProducts.map(item => (
                                 <ProductCard 
                                     key={item.id} 
@@ -182,9 +182,9 @@ export default function CandleaPage() {
                             <p className="text-base text-brand-text opacity-70 mt-8 max-w-md">{businessData.feature2.subtext}</p>
                         </div>
                         <div className="flex flex-col gap-8">
-                            <div className="md:pl-10">
+                            <div className="md:pl-10 text-center md:text-left items-center md:items-start flex flex-col">
                                 <h2 className="text-4xl md:text-5xl font-bold text-brand-text leading-tight font-serif">{businessData.feature2.title}</h2>
-                                <p className="text-lg text-brand-text opacity-70 mt-6 max-w-lg">{businessData.feature2.text}</p>
+                                <p className="text-lg text-brand-text opacity-70 mt-6 max-w-lg w-full md:w-auto">{businessData.feature2.text}</p>
 
                                 <img 
                                     src={businessData.feature2.image2}
