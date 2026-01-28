@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { submitOrder } from '@/app/actions/orderActions';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import StateSelector from '@/components/checkout/StateSelector';
 
 export default function CheckoutPage() {
     const { cartDetails, subtotal, shipping, total, openCart, clearCart } = useCart();
@@ -218,13 +219,10 @@ export default function CheckoutPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-brand-text/80">State *</label>
-                                    <input
-                                        name="state"
+                                    <StateSelector
                                         value={formData.state}
-                                        onChange={handleChange}
-                                        type="text"
-                                        className={cn("w-full p-3 border rounded-md focus:ring-1 focus:ring-brand-secondary outline-none transition-all", fieldErrors.state ? "border-red-500" : "border-brand-text/30")}
-                                        required
+                                        onChange={(val) => handleChange({ target: { name: 'state', value: val } })}
+                                        error={fieldErrors.state}
                                     />
                                     {fieldErrors.state && <p className="text-xs text-red-500">{fieldErrors.state}</p>}
                                 </div>

@@ -175,7 +175,7 @@ export default function CandleaPage() {
             <Editable focusId="feature2">
                 <section id="feature2" className="py-10 md:py-24 overflow-hidden bg-brand-bg">
                     <div className="container mx-auto px-6 grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-16 items-start">
-                        <div className="relative w-full">
+                        <div className="relative w-full mt-8 md:mt-0">
                             <div className="w-full aspect-[4/5] rounded-t-full overflow-hidden">
                                 <img 
                                     src={businessData.feature2.image1} 

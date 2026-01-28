@@ -183,9 +183,9 @@ export default function AvenixPage() {
                             </h2>
                         </div>
                         
-                        <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 items-start">
+                        <div className="container mx-auto px-6 grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-8 mt-16 items-start">
                             
-                            <div className="md:col-span-1 h-full">
+                            <div className="col-span-1 md:col-span-1 h-full">
                                 <img 
                                     src={businessData.featured.largeImage} 
                                     alt="Featured Product" 
@@ -195,7 +195,7 @@ export default function AvenixPage() {
 
                             {/* Item 2: Product 1 */}
                             {featuredProducts[0] && (
-                                <div className="md:col-span-1 flex flex-col items-center text-center">
+                                <div className="col-span-1 md:col-span-1 flex flex-col items-center text-center">
                                     <div className="bg-white rounded-2xl w-full"> 
                                         <img src={featuredProducts[0].image} alt={featuredProducts[0].name} className="w-full h-auto object-cover rounded-lg aspect-[4/5] pb-6" />
                                         <h3 className="text-2xl font-serif font-medium mt-6">{featuredProducts[0].name}</h3>
@@ -210,7 +210,7 @@ export default function AvenixPage() {
 
                             {/* Item 3: Product 2 */}
                             {featuredProducts[1] && (
-                                <div className="md:col-span-1 flex flex-col items-center text-center">
+                                <div className="col-span-1 md:col-span-1 flex flex-col items-center text-center">
                                     <div className="bg-white rounded-2xl w-full"> 
                                         <img src={featuredProducts[1].image} alt={featuredProducts[1].name} className="w-full h-auto  pb-6  object-cover rounded-lg aspect-[4/5]" />
                                         <h3 className="text-2xl font-serif font-medium  mt-6">{featuredProducts[1].name}</h3>
@@ -306,7 +306,7 @@ export default function AvenixPage() {
                         <div className="container mx-auto px-6 text-center">
                             <p className="text-sm uppercase tracking-widest font-sans opacity-70">{businessData.newArrivals.heading}</p>
                             <h2 className="text-5xl font-serif font-medium text-brand-text mt-4">{businessData.newArrivals.title}</h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16 mt-16 items-start">
+                            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 md:gap-x-8 gap-y-8 md:gap-y-16 mt-16 items-start">
                                 {newArrivalsProducts.map(item => (
                                     <ProductCard 
                                         key={item.id} 
