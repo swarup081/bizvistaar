@@ -3,10 +3,13 @@
 import { useCart } from '../cartContext.js';
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { submitOrder } from '@/app/actions/orderActions'; // Adjust path if necessary
+import { submitOrder } from '@/app/actions/orderActions';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function CheckoutPage() {
     const { cartDetails, subtotal, shipping, total, openCart, clearCart } = useCart();
+    // Swapped fields: No email. Added phone (required). Added note (optional).
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -14,50 +17,75 @@ export default function CheckoutPage() {
         city: '',
         state: '',
         zipCode: '',
-        phone: '',
-        email: '' // Added email field
+        phone: '', // Replaces email as primary contact
+        note: ''   // Replaces old 'phone' slot
     });
+    
+    // Explicit field error state
+    const [fieldErrors, setFieldErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState('');
     const pathname = usePathname();
     const router = useRouter();
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        if (fieldErrors[name]) {
+             setFieldErrors(prev => ({ ...prev, [name]: null }));
+        }
     };
+
+    const validateForm = () => {
+        const errors = {};
+        if (!formData.firstName.trim()) errors.firstName = "First name is required";
+        if (!formData.lastName.trim()) errors.lastName = "Last name is required";
+        if (!formData.phone.trim()) errors.phone = "Phone number is required"; // New Required Field
+        
+        // Strict phone validation (10 digits)
+        const phoneRegex = /^\d{10}$/;
+        if (formData.phone.trim() && !phoneRegex.test(formData.phone.trim())) {
+             errors.phone = "Phone number must be exactly 10 digits";
+        }
+
+        if (!formData.address.trim()) errors.address = "Address is required";
+        if (!formData.city.trim()) errors.city = "City is required";
+        if (!formData.state.trim()) errors.state = "State is required";
+        if (!formData.zipCode.trim()) errors.zipCode = "ZIP Code is required";
+        
+        // ZIP validation
+        const zipRegex = /^\d{6}$/;
+        if (formData.zipCode.trim() && !zipRegex.test(formData.zipCode.trim())) {
+             errors.zipCode = "ZIP code must be exactly 6 digits";
+        }
+
+        // Note is optional
+        
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
+    }
 
     const handlePlaceOrder = async (e) => {
         e.preventDefault();
-        setIsSubmitting(true);
         setMessage('');
 
+        if (!validateForm()) {
+            setMessage("Please fix the highlighted errors before continuing.");
+            return;
+        }
+
+        setIsSubmitting(true);
+
         try {
-            // Extract slug from URL (e.g. /site/myslug/checkout)
-            // Or rely on the 'slug' passed in via props if this was a server component, but here we are client.
-            // Safe bet: parse pathname
             const pathParts = pathname.split('/');
-            // Expected formats: 
-            // 1. /site/[slug]/checkout
-            // 2. /templates/flara/checkout (Preview mode) - Handle this!
-            
             let siteSlug = null;
             if (pathParts[1] === 'site') {
                 siteSlug = pathParts[2];
             } else {
-                // In template preview mode, we can't really save to a specific user site unless we mock it or use a query param.
-                // However, the user wants "pseudo orders".
-                // We'll throw an error if not on a published site, OR fallback to a demo site if exists.
-                // Better: Check if we can find a slug.
-                 console.warn("Checkout is running in preview/template mode. Order might fail if not linked to a real site.");
-                 // For now, let's assume we are testing on a "deployed" site or the wrapper passes context.
-                 // Actually, looking at `src/app/site/[slug]/checkout/page.js`, it renders this component.
-                 // But this component doesn't receive props.
-                 // We need to parse the URL.
+                 console.warn("Checkout is running in preview/template mode.");
             }
 
             if (!siteSlug && pathParts[1] !== 'site') {
-                 // Fallback for development/testing directly on /templates/flara/checkout
-                 // We can't really submit an order without a website ID.
                  setMessage('Cannot place real orders in Template Preview mode. Please publish the site first.');
                  setIsSubmitting(false);
                  return;
@@ -66,17 +94,15 @@ export default function CheckoutPage() {
             const result = await submitOrder({
                 siteSlug,
                 cartDetails,
-                customerDetails: formData,
+                customerDetails: formData, // Contains phone, note, etc.
                 totalAmount: total
             });
 
             if (result.success) {
                 setMessage('Order placed successfully!');
                 clearCart();
-                // Redirect to success or home
                 setTimeout(() => {
-                    // router.push(`/site/${siteSlug}/shop`); // Redirect to shop
-                    // For now just show success
+                    // Logic for success redirect could go here
                 }, 2000);
             } else {
                 setMessage('Failed to place order: ' + result.error);
@@ -91,73 +117,153 @@ export default function CheckoutPage() {
     };
 
     return (
-        <div className="container mx-auto px-6 py-20">
-            <h1 className="text-5xl font-bold text-brand-text font-serif text-center mb-12">Checkout</h1>
+        <div className="container mx-auto px-4 md:px-6 py-10 md:py-20 max-w-7xl">
+            <h1 className="text-3xl md:text-5xl font-bold text-brand-text font-serif text-center mb-8 md:mb-12">Checkout</h1>
             
             {cartDetails.length === 0 ? (
                 <div className="text-center">
                     <p className="text-xl text-brand-text/80">Your cart is empty.</p>
                     <a 
-                        href="shop" // Relative link works for both /site/slug/shop and /templates/flara/shop
-                        className="mt-8 inline-block bg-brand-secondary text-brand-bg px-8 py-3 font-semibold uppercase tracking-wider"
+                        href="shop" 
+                        className="mt-8 inline-block bg-brand-secondary text-brand-bg px-8 py-3 font-semibold uppercase tracking-wider rounded-md"
                     >
                         Start Shopping
                     </a>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
                     
                     {/* Shipping Details Form */}
                     <div className="font-sans">
-                        <h2 className="text-2xl font-serif font-semibold text-brand-text mb-6">Shipping Details</h2>
-                        <form className="space-y-4" onSubmit={handlePlaceOrder}>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-brand-text/80 mb-1">First Name</label>
-                                    <input required name="firstName" onChange={handleChange} type="text" className="w-full p-3 border border-brand-text/30 focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary outline-none" />
+                        <div className="flex items-center gap-4 mb-6">
+                             <h2 className="text-2xl font-serif font-semibold text-brand-text">Shipping Details</h2>
+                        </div>
+                        
+                        {message && message.includes('fix') && (
+                            <div className="mb-4 p-4 text-red-700 bg-red-100 rounded-lg border border-red-200 flex items-start gap-2">
+                                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                                <span>{message}</span>
+                            </div>
+                        )}
+                       
+                        <form className="space-y-6" onSubmit={handlePlaceOrder}>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-brand-text/80">First Name *</label>
+                                    <input 
+                                        name="firstName" 
+                                        value={formData.firstName}
+                                        onChange={handleChange} 
+                                        type="text" 
+                                        className={cn("w-full p-3 border rounded-md focus:ring-1 focus:ring-brand-secondary outline-none transition-all", fieldErrors.firstName ? "border-red-500" : "border-brand-text/30")} 
+                                        required
+                                    />
+                                    {fieldErrors.firstName && <p className="text-xs text-red-500">{fieldErrors.firstName}</p>}
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-brand-text/80 mb-1">Last Name</label>
-                                    <input required name="lastName" onChange={handleChange} type="text" className="w-full p-3 border border-brand-text/30 focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary outline-none" />
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-brand-text/80">Last Name *</label>
+                                    <input 
+                                        name="lastName" 
+                                        value={formData.lastName}
+                                        onChange={handleChange} 
+                                        type="text" 
+                                        className={cn("w-full p-3 border rounded-md focus:ring-1 focus:ring-brand-secondary outline-none transition-all", fieldErrors.lastName ? "border-red-500" : "border-brand-text/30")} 
+                                        required
+                                    />
+                                    {fieldErrors.lastName && <p className="text-xs text-red-500">{fieldErrors.lastName}</p>}
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-brand-text/80 mb-1">Email</label>
-                                <input required name="email" onChange={handleChange} type="email" className="w-full p-3 border border-brand-text/30 focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary outline-none" />
+
+                            {/* Replaced Email with Phone Number */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-brand-text/80">Phone Number *</label>
+                                <input 
+                                    name="phone" 
+                                    value={formData.phone}
+                                    onChange={handleChange} 
+                                    type="tel" 
+                                    placeholder="0000000000"
+                                    className={cn("w-full p-3 border rounded-md focus:ring-1 focus:ring-brand-secondary outline-none transition-all", fieldErrors.phone ? "border-red-500" : "border-brand-text/30")} 
+                                    required
+                                />
+                                {fieldErrors.phone && <p className="text-xs text-red-500">{fieldErrors.phone}</p>}
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-brand-text/80 mb-1">Address</label>
-                                <input required name="address" onChange={handleChange} type="text" className="w-full p-3 border border-brand-text/30 focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary outline-none" />
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-brand-text/80">Address *</label>
+                                <input 
+                                    name="address" 
+                                    value={formData.address}
+                                    onChange={handleChange} 
+                                    type="text" 
+                                    className={cn("w-full p-3 border rounded-md focus:ring-1 focus:ring-brand-secondary outline-none transition-all", fieldErrors.address ? "border-red-500" : "border-brand-text/30")} 
+                                    required
+                                />
+                                {fieldErrors.address && <p className="text-xs text-red-500">{fieldErrors.address}</p>}
                             </div>
-                             <div>
-                                <label className="block text-sm font-medium text-brand-text/80 mb-1">City</label>
-                                <input required name="city" onChange={handleChange} type="text" className="w-full p-3 border border-brand-text/30 focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary outline-none" />
+
+                             <div className="space-y-2">
+                                <label className="text-sm font-semibold text-brand-text/80">City *</label>
+                                <input 
+                                    name="city" 
+                                    value={formData.city}
+                                    onChange={handleChange} 
+                                    type="text" 
+                                    className={cn("w-full p-3 border rounded-md focus:ring-1 focus:ring-brand-secondary outline-none transition-all", fieldErrors.city ? "border-red-500" : "border-brand-text/30")} 
+                                    required
+                                />
+                                {fieldErrors.city && <p className="text-xs text-red-500">{fieldErrors.city}</p>}
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-brand-text/80 mb-1">State</label>
-                                    <input required name="state" onChange={handleChange} type="text" className="w-full p-3 border border-brand-text/30 focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary outline-none" />
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-brand-text/80">State *</label>
+                                    <input 
+                                        name="state" 
+                                        value={formData.state}
+                                        onChange={handleChange} 
+                                        type="text" 
+                                        className={cn("w-full p-3 border rounded-md focus:ring-1 focus:ring-brand-secondary outline-none transition-all", fieldErrors.state ? "border-red-500" : "border-brand-text/30")} 
+                                        required
+                                    />
+                                    {fieldErrors.state && <p className="text-xs text-red-500">{fieldErrors.state}</p>}
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-brand-text/80 mb-1">ZIP Code</label>
-                                    <input required name="zipCode" onChange={handleChange} type="text" className="w-full p-3 border border-brand-text/30 focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary outline-none" />
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-brand-text/80">ZIP Code *</label>
+                                    <input 
+                                        name="zipCode" 
+                                        value={formData.zipCode}
+                                        onChange={handleChange} 
+                                        type="text" 
+                                        className={cn("w-full p-3 border rounded-md focus:ring-1 focus:ring-brand-secondary outline-none transition-all", fieldErrors.zipCode ? "border-red-500" : "border-brand-text/30")} 
+                                        required
+                                    />
+                                    {fieldErrors.zipCode && <p className="text-xs text-red-500">{fieldErrors.zipCode}</p>}
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-brand-text/80 mb-1">Phone</label>
-                                <input required name="phone" onChange={handleChange} type="tel" className="w-full p-3 border border-brand-text/30 focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary outline-none" />
+
+                            {/* Replaced old Phone slot with Note */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-brand-text/80">Note (Optional)</label>
+                                <input 
+                                    name="note" 
+                                    value={formData.note}
+                                    onChange={handleChange} 
+                                    type="text" 
+                                    className="w-full p-3 border border-brand-text/30 rounded-md focus:ring-1 focus:ring-brand-secondary outline-none transition-all" 
+                                />
                             </div>
                         </form>
                     </div>
                     
                     {/* Order Summary */}
-                    <div className="bg-brand-primary p-8 h-fit">
+                    <div className="bg-brand-primary p-5 md:p-8 h-fit rounded-lg shadow-sm border border-brand-text/10">
                         <h2 className="text-2xl font-serif font-semibold text-brand-text mb-6">Your Order</h2>
                         
                         <div className="space-y-4 border-b border-brand-text/20 pb-4">
                             {cartDetails.map(item => (
                                 <div key={item.id} className="flex items-center gap-4">
-                                    <img src={item.image} alt={item.name} className="w-16 h-20 object-cover bg-white" />
+                                    <img src={item.image} alt={item.name} className="w-16 h-20 object-cover bg-white rounded-sm" />
                                     <div className="flex-grow">
                                         <h3 className="font-semibold text-brand-text">{item.name}</h3>
                                         <p className="text-sm text-brand-text/70">Quantity: {item.quantity}</p>
@@ -183,20 +289,28 @@ export default function CheckoutPage() {
                             <span>₹{total.toFixed(2)}</span>
                         </div>
                         
-                        {message && (
-                            <div className={`p-3 rounded mb-4 text-sm ${message.includes('success') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                {message}
+                        {message && !message.includes('fix') && (
+                            <div className={`p-4 rounded-lg mb-4 text-sm flex items-start gap-2 ${message.includes('success') ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
+                                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                                <span>{message}</span>
                             </div>
                         )}
 
                         <button 
                             onClick={handlePlaceOrder}
                             disabled={isSubmitting}
-                            className="w-full mt-4 h-12 bg-brand-secondary text-brand-bg font-semibold uppercase tracking-wider hover:opacity-80 transition-opacity disabled:opacity-50"
+                            className="w-full mt-4 h-12 bg-brand-secondary text-brand-bg font-bold uppercase tracking-wider rounded-lg shadow-md hover:opacity-90 transition-all disabled:opacity-70 flex items-center justify-center gap-2"
                         >
-                            {isSubmitting ? 'Processing...' : 'Place Order (COD)'}
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    Processing...
+                                </>
+                            ) : (
+                                'Place Order (COD)'
+                            )}
                         </button>
-                        <p className="text-xs text-brand-text/60 text-center mt-2">Payment will be collected upon delivery.</p>
+                        <p className="text-xs text-brand-text/60 text-center mt-3">Payment will be collected upon delivery.</p>
                     </div>
                 </div>
             )}
